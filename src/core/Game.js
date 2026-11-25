@@ -8,7 +8,7 @@ import AudioManager from './Audio.js';
 import Input from './Input.js';
 import Lighting from '../world/Lighting.js';
 import StoreWorld from '../world/StoreWorld.js';
-import { createShelfMesh } from '../world/ShelfFactory.js';
+import { createShelfMesh, refreshShelfVisual, preloadProductModels } from '../world/ShelfFactory.js';
 import Player from '../entities/Player.js';
 import { spawnCustomer, updateCustomers, clearCustomers } from '../entities/Customer.js';
 import { updateStaff, resetStaffTimers } from '../entities/Staff.js';
@@ -91,6 +91,9 @@ export default class Game {
       const group = createShelfMesh(shd, this);
       this.runtime.shelves.push({ ...shd, group });
     }
+    preloadProductModels()
+      .then(() => this.runtime.shelves.forEach(sh => refreshShelfVisual(sh.spot, sh.group, sh, this)))
+      .catch(err => console.warn('[Game] Product GLB refresh skipped.', err));
     this.world.rebuildColliders();
     spawnDelivery(this);
     this.lastAutosave = performance.now();

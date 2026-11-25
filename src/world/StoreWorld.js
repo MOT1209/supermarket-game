@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { floorTexture, outsideTexture, signTexture, makeCanvas } from '../utils/textures.js';
+import { cloneModel } from '../utils/AssetLoader.js';
 
 const boxMesh = (w, h, d, color, opts = {}) => {
   const m = new THREE.Mesh(
@@ -159,6 +160,34 @@ export default class StoreWorld {
     this.dumpster = dump;
 
     this.rebuildColliders();
+    this.addBlenderProps();
+  }
+
+  // Blender GLBs enhance the procedural world. Failures are non-fatal: the
+  // original meshes remain and gameplay is unaffected.
+  async addBlenderProps() {
+    const placements = [
+      ['display_stand.glb', [-9.2, 0, 5.5], Math.PI / 2],
+      ['display_stand.glb', [9.6, 0, 2.5], -Math.PI / 2],
+      ['checkout_counter.glb', null, 0],
+      ['cashier.glb', [7, 0, 6.2], Math.PI],
+      ['customer_1.glb', [2.5, 0, 10], Math.PI],
+      ['car.glb', [2.5, 0, 23], Math.PI],
+      ['street_kit.glb', [0, 0, 30], 0],
+      ['house.glb', [-11, 0, 27], Math.PI / 4]
+    ];
+    for (const [file, pos, rotation] of placements) {
+      const model = await cloneModel(file);
+      if (!model) continue;
+      model.rotation.y = rotation;
+      if (file === 'checkout_counter.glb' && this.register) {
+        this.register.clear();
+        this.register.add(model);
+      } else if (pos) {
+        model.position.set(pos[0], pos[1], pos[2]);
+        this.game.scene.add(model);
+      }
+    }
   }
 
   rebuildColliders() {

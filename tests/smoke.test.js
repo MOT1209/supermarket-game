@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { existsSync, statSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import {
   PRODUCTS, LICENSES, CATEGORIES, SHELF_SPOTS, STARTING_SHELVES,
@@ -119,5 +122,21 @@ test('licenses unlock products that exist', () => {
     assert.ok(PRODUCTS[l.product], `${l.id} -> missing product`);
     assert.equal(PRODUCTS[l.product].license, l.id);
     assert.ok(l.cost > 0);
+  }
+});
+
+test('Blender GLB exports are present and non-empty', () => {
+  const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+  const models = join(root, 'public', 'models');
+  const expected = [
+    'store_shell.glb', 'display_stand.glb', 'checkout_counter.glb',
+    'player.glb', 'cashier.glb', 'customer_1.glb', 'customer_2.glb',
+    'customer_3.glb', 'car.glb', 'street_kit.glb', 'house.glb',
+    ...Object.keys(PRODUCTS).map(pid => `product_${pid}.glb`)
+  ];
+  for (const file of expected) {
+    const p = join(models, file);
+    assert.ok(existsSync(p), `${file} missing from public/models`);
+    assert.ok(statSync(p).size > 1000, `${file} is empty or truncated`);
   }
 });
