@@ -16,7 +16,9 @@ import UIManager from '../ui/UIManager.js';
 import CheckoutSystem from '../systems/CheckoutSystem.js';
 import { findInteract, interact, updatePrompt } from '../systems/Interaction.js';
 import { spawnDelivery } from '../systems/DeliverySystem.js';
-import { fluctuatePrices, wages } from '../systems/EconomySystem.js';
+import { fluctuatePrices, wages, operatingCost } from '../systems/EconomySystem.js';
+import { spawnRate } from '../systems/Reputation.js';
+import { evaluateObjective } from '../systems/Objectives.js';
 
 export default class Game {
   constructor() {
@@ -47,18 +49,38 @@ export default class Game {
     };
 
     this.audio = new AudioManager();
+    this.audio.setVolume(this.state.volume ?? 0.8);
     this.lighting = new Lighting(this.scene);
     this.world = new StoreWorld(this);
     this.player = new Player(this);
     this.ui = new UIManager(this);
     this.input = new Input(this);
     this.checkout = new CheckoutSystem(this);
+    this.applyGraphics();
 
     addEventListener('resize', () => {
       this.camera.aspect = innerWidth / innerHeight;
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(innerWidth, innerHeight);
     });
+  }
+
+  applyGraphics() {
+    const g = this.state.graphics || 'high';
+    const dpr = window.devicePixelRatio || 1;
+    if (g === 'low') {
+      this.renderer.shadowMap.enabled = false;
+      this.renderer.setPixelRatio(1);
+    } else if (g === 'medium') {
+      this.renderer.shadowMap.enabled = true;
+      this.renderer.setPixelRatio(Math.min(dpr, 1.5));
+    } else {
+      this.renderer.shadowMap.enabled = true;
+      this.renderer.setPixelRatio(Math.min(dpr, 2));
+    }
+    this.renderer.shadowMap.needsUpdate = true;
+    // Materials need a nudge to notice the shadow toggle.
+    this.scene.traverse(o => { if (o.isMesh && o.material) o.material.needsUpdate = true; });
   }
 
   spot(i) { return SHELF_SPOTS[i]; }
@@ -119,7 +141,7 @@ export default class Game {
     this.ui.updateClock(`${hh}:${String(m).padStart(2, '0')} ${ap}`, this.state.day);
     this.lighting.update(t);
     if (t >= 1) this.closeStore();
-    else if (Math.random() < dt * 0.13) spawnCustomer(this);
+    else if (Math.random() < dt * spawnRate(this)) spawnCustomer(this);
   }
 
   onInteract() { interact(this); }
@@ -167,9 +189,11 @@ export default class Game {
     this.mode = 'summary';
     this.input.exitLock();
     const wage = wages(this);
+    const upkeep = operatingCost(this);
     const st = this.runtime.stats;
-    const net = rounded(st.revenue + st.recycle - st.stockCost - wage);
-    this.state.cash = rounded(this.state.cash - wage);
+    const { obj, progress, met, bonus } = evaluateObjective(this);
+    this.state.cash = rounded(this.state.cash - wage - upkeep + bonus);
+    const net = rounded(st.revenue + st.recycle + bonus - st.stockCost - wage - upkeep);
     if (this.state.cash < WAGE_RESTOCKER) this.state.staff.restocker = false;
     if (this.state.cash < WAGE_CASHIER) this.state.staff.cashier = false;
     this.ui.summary.render({
@@ -177,7 +201,10 @@ export default class Game {
       revenue: st.revenue,
       stockCost: st.stockCost,
       wages: wage,
+      upkeep,
       recycle: st.recycle,
+      bonus,
+      objective: { text: obj.text, progress, target: obj.target, met },
       net,
       happy: st.happy,
       angry: st.angry,

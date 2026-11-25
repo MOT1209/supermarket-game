@@ -1,6 +1,8 @@
-import { DENOMS, PRODUCTS, sellPrice } from '../data/products.js';
+import { DENOMS, PRODUCTS } from '../data/products.js';
 import { money, rounded } from '../utils/math.js';
 import { basketTotal, showEmoji, reindexQueue } from '../entities/Customer.js';
+import { currentSellPrice } from './Pricing.js';
+import { onHappyCustomer, onAngryCustomer } from './Reputation.js';
 
 export default class CheckoutSystem {
   constructor(game) { this.game = game; }
@@ -11,7 +13,9 @@ export default class CheckoutSystem {
     game.mode = 'modal';
     game.input.exitLock();
     const total = basketTotal(game, c);
-    const list = c.basket.map(pid => `<li>${PRODUCTS[pid].name} — ${money(sellPrice(pid))}</li>`).join('');
+    const list = c.basket
+      .map(pid => `<li>${PRODUCTS[pid].name} — ${money(currentSellPrice(game, pid))}</li>`)
+      .join('');
     const byCard = Math.random() < 0.5;
     let html = `<p>Customer basket:</p><ul style="margin-left:20px;line-height:1.7">${list || '<li>(nothing)</li>'}</ul>
       <div class="stat"><span>Total due</span><b>${money(total)}</b></div>`;
@@ -74,11 +78,13 @@ export default class CheckoutSystem {
       game.state.lifetimeRevenue += total;
       game.runtime.stats.revenue += total;
       game.runtime.stats.happy++;
+      onHappyCustomer(game);
       game.audio.play('success');
       showEmoji(c, '😊', 2.5);
       c.state = 'happy';
     } else {
       game.runtime.stats.angry++;
+      onAngryCustomer(game);
       game.audio.play('error');
       showEmoji(c, '😠', 2.5);
       c.state = 'angry';

@@ -2,29 +2,51 @@ import * as THREE from 'three';
 import { PRODUCTS, SHELF_SPOTS } from '../data/products.js';
 import { labelTexture } from '../utils/textures.js';
 
-export function makeProductMesh(pid) {
+// Geometry + material are shared per product, so refreshing a shelf never
+// allocates (or leaks) GPU resources. Product meshes are cheap clones.
+const assetCache = new Map();
+
+function productAssets(pid) {
+  if (assetCache.has(pid)) return assetCache.get(pid);
   const p = PRODUCTS[pid];
-  const g = new THREE.Group();
   const mat = new THREE.MeshStandardMaterial({ color: p.color, roughness: 0.6 });
-  let m;
+  let geo;
   switch (p.shape) {
-    case 'carton': m = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.44, 0.24), mat); break;
-    case 'loaf':   m = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.22, 0.24), mat); break;
-    case 'sphere': m = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 8), mat); break;
-    case 'bottle': m = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.42, 10), mat); break;
-    case 'can':    m = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.34, 10), mat); break;
-    case 'wedge':  m = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.2, 0.3), mat); break;
-    case 'bag':    m = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.4, 0.12), mat); break;
-    default:       m = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.35, 0.25), mat);
+    case 'carton': geo = new THREE.BoxGeometry(0.32, 0.44, 0.24); break;
+    case 'loaf':   geo = new THREE.BoxGeometry(0.4, 0.22, 0.24); break;
+    case 'sphere': geo = new THREE.SphereGeometry(0.16, 8, 8); break;
+    case 'bottle': geo = new THREE.CylinderGeometry(0.1, 0.1, 0.42, 10); break;
+    case 'can':    geo = new THREE.CylinderGeometry(0.12, 0.12, 0.34, 10); break;
+    case 'wedge':  geo = new THREE.BoxGeometry(0.34, 0.2, 0.3); break;
+    case 'bag':    geo = new THREE.BoxGeometry(0.34, 0.4, 0.12); break;
+    case 'egg':    geo = new THREE.SphereGeometry(0.13, 10, 8); break;
+    case 'cup':    geo = new THREE.CylinderGeometry(0.12, 0.09, 0.3, 12); break;
+    case 'box':    geo = new THREE.BoxGeometry(0.3, 0.46, 0.16); break;
+    case 'steak':  geo = new THREE.BoxGeometry(0.36, 0.14, 0.26); break;
+    default:       geo = new THREE.BoxGeometry(0.3, 0.35, 0.25);
   }
+  const assets = { geo, mat, cap: null, capY: 0 };
+  if (p.shape === 'bottle' || p.shape === 'can') {
+    const r = p.shape === 'can' ? 0.12 : 0.06;
+    assets.cap = {
+      geo: new THREE.CylinderGeometry(r, r, 0.04, 8),
+      mat: new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: 0.5 }),
+      y: p.shape === 'can' ? 0.19 : 0.23
+    };
+  }
+  assetCache.set(pid, assets);
+  return assets;
+}
+
+export function makeProductMesh(pid) {
+  const a = productAssets(pid);
+  const g = new THREE.Group();
+  const m = new THREE.Mesh(a.geo, a.mat);
   m.castShadow = true;
   g.add(m);
-  if (p.shape === 'bottle' || p.shape === 'can') {
-    const cap = new THREE.Mesh(
-      new THREE.CylinderGeometry(p.shape === 'can' ? 0.12 : 0.06, p.shape === 'can' ? 0.12 : 0.06, 0.04, 8),
-      new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: 0.5 })
-    );
-    cap.position.y = p.shape === 'can' ? 0.19 : 0.23;
+  if (a.cap) {
+    const cap = new THREE.Mesh(a.cap.geo, a.cap.mat);
+    cap.position.y = a.cap.y;
     g.add(cap);
   }
   return g;
@@ -38,10 +60,8 @@ export function refreshShelfVisual(spot, group, shd, game) {
   const g = group || (found && found.group);
   if (!g || !sh) return;
   const pc = g.userData.products;
-  while (pc.children.length) {
-    const c = pc.children.pop();
-    pc.remove(c);
-  }
+  // Children reuse shared assets, so plain removal is safe (no dispose).
+  while (pc.children.length) pc.remove(pc.children[0]);
   const n = Math.min(sh.stock, sh.capacity);
   let idx = 0;
   for (let row = 0; row < 3 && idx < n; row++) {

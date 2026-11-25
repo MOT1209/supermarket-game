@@ -15,6 +15,7 @@
   <div id="topbar">
     <div class="panel" id="clockBox">Day 1 &nbsp;|&nbsp; <b id="timeText">8:00 AM</b></div>
     <div class="row">
+      <div class="panel" id="repBox" title="Store reputation">⭐ <b id="repText">3.0</b></div>
       <div class="panel">Cash: <b class="money" id="cashText">$0.00</b></div>
       <button class="btn alt" id="closeBtn">Close Store</button>
     </div>
@@ -48,6 +49,14 @@
     <h2>Settings</h2>
     <label>Mouse Sensitivity: <span id="sensVal">0.00080</span></label>
     <input type="range" id="sensSlider" min="20" max="200" value="80">
+    <label>Volume: <span id="volVal">80%</span></label>
+    <input type="range" id="volSlider" min="0" max="100" value="80">
+    <label>Graphics</label>
+    <select id="gfxSelect">
+      <option value="low">Low (no shadows)</option>
+      <option value="medium">Medium</option>
+      <option value="high">High</option>
+    </select>
     <p class="small">Lower = slower, more precise camera. Default 0.0008.</p>
     <div class="row" style="margin-top:14px">
       <button class="btn" id="resumeBtn">▶ Resume</button>
@@ -62,6 +71,7 @@
     <h1>🖥 Store Terminal <span id="termCash" class="money" style="float:right;font-size:20px"></span></h1>
     <div class="tabs">
       <div class="tab active" data-tab="stock">📦 Order Stock</div>
+      <div class="tab" data-tab="pricing">💲 Pricing</div>
       <div class="tab" data-tab="licenses">📜 Licenses</div>
       <div class="tab" data-tab="build">🔨 Build / Furniture</div>
       <div class="tab" data-tab="staff">👥 Staff</div>

@@ -1,6 +1,7 @@
 import {
   PRODUCTS, LICENSES, BOX_COST_MULTIPLIER, SHELF_CAPACITY,
-  maxSpots, WAGE_RESTOCKER, WAGE_CASHIER
+  maxSpots, WAGE_RESTOCKER, WAGE_CASHIER,
+  RENT_PER_DAY, FRIDGE_UPKEEP
 } from '../data/products.js';
 import { rand, rounded } from '../utils/math.js';
 import { createShelfMesh } from '../world/ShelfFactory.js';
@@ -36,7 +37,7 @@ export function buyLicense(game, id) {
 }
 
 export function addShelf(game, pid, fridge) {
-  if (game.state.shelves.length >= 12) return null;
+  if (game.state.shelves.length >= maxSpots(game.state.level)) return null;
   const shd = {
     productId: pid, stock: 0, capacity: SHELF_CAPACITY,
     spot: game.state.shelves.length, fridge
@@ -108,4 +109,10 @@ export function wages(game) {
   if (game.state.staff.restocker) w += WAGE_RESTOCKER;
   if (game.state.staff.cashier) w += WAGE_CASHIER;
   return w;
+}
+
+// Rent + per-fridge utilities, charged when the store closes.
+export function operatingCost(game) {
+  const fridges = game.state.shelves.filter(s => s.fridge).length;
+  return RENT_PER_DAY + fridges * FRIDGE_UPKEEP;
 }

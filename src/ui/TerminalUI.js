@@ -1,11 +1,15 @@
 import {
-  PRODUCTS, LICENSES, sellPrice, maxSpots,
+  PRODUCTS, LICENSES, maxSpots,
   WAGE_RESTOCKER, WAGE_CASHIER
 } from '../data/products.js';
 import { money, rounded } from '../utils/math.js';
 import {
   orderBox, buyLicense, buyFurniture, expandStore, hire, setStoreName
 } from '../systems/EconomySystem.js';
+import {
+  currentSellPrice, margin, marginPct, setSellPrice, resetSellPrice
+} from '../systems/Pricing.js';
+import { evaluateObjective } from '../systems/Objectives.js';
 
 export default class TerminalUI {
   constructor(game, ui) {
@@ -30,7 +34,7 @@ export default class TerminalUI {
         const cls = tr > 0 ? 'up' : tr < 0 ? 'down' : '';
         const arrow = tr > 0 ? '▲' : tr < 0 ? '▼' : '—';
         h += `<div class="tile"><h3>${p.name}</h3><div>Wholesale: <span class="price">${money(price)}</span> <span class="${cls}">${arrow}</span></div>
-          <div class="small">Shelves sell for ${money(sellPrice(pid))} each</div>
+          <div class="small">Sells for ${money(currentSellPrice(g, pid))} (margin ${money(margin(g, pid))})</div>
           <button class="btn" data-buy="${pid}" style="margin-top:8px">Order box (${money(rounded(price * 6))})</button></div>`;
       }
       h += '</div>';
@@ -40,6 +44,26 @@ export default class TerminalUI {
         const owned = g.state.licenses.includes(l.id);
         h += `<div class="tile"><h3>📜 ${l.name}</h3><div class="small">Unlocks ${PRODUCTS[l.product].name}</div>
           ${owned ? '<div class="badge">Owned</div>' : `<button class="btn" data-lic="${l.id}" ${g.state.cash < l.cost ? 'disabled' : ''}>Buy ${money(l.cost)}</button>`}</div>`;
+      }
+      h += '</div>';
+    } else if (tab === 'pricing') {
+      h = `<h2>Pricing</h2><p class="small">Set the shelf price for each product. You cannot sell below the current wholesale cost.</p>
+        <div class="stat"><span>🎯 Today's objective</span><b>${evaluateObjective(g).obj.text}</b></div>
+        <div class="grid">`;
+      for (const pid in PRODUCTS) {
+        const p = PRODUCTS[pid];
+        if (p.license && !g.state.licenses.includes(p.license)) continue;
+        const sp = currentSellPrice(g, pid);
+        const mg = margin(g, pid);
+        const pct = marginPct(g, pid);
+        h += `<div class="tile"><h3>${p.name}</h3>
+          <div>Price: <span class="price">${money(sp)}</span></div>
+          <div class="small">Cost ${money(g.state.prices[pid])} · margin <span class="${mg >= 0 ? 'down' : 'up'}">${money(mg)} (${pct}%)</span></div>
+          <div class="row" style="margin-top:8px">
+            <button class="btn alt" data-price-down="${pid}">−$0.10</button>
+            <button class="btn alt" data-price-up="${pid}">+$0.10</button>
+            <button class="btn gray" data-price-reset="${pid}">Reset</button>
+          </div></div>`;
       }
       h += '</div>';
     } else if (tab === 'build') {
@@ -78,6 +102,17 @@ export default class TerminalUI {
     el.tabContent.querySelectorAll('[data-build]').forEach(b => b.onclick = () => { buyFurniture(g, b.dataset.build); this.render(); });
     el.tabContent.querySelectorAll('[data-expand]').forEach(b => b.onclick = () => { expandStore(g); this.render(); });
     el.tabContent.querySelectorAll('[data-hire]').forEach(b => b.onclick = () => { hire(g, b.dataset.hire); this.render(); });
+    el.tabContent.querySelectorAll('[data-price-up]').forEach(b => b.onclick = () => {
+      const pid = b.dataset.priceUp;
+      setSellPrice(g, pid, currentSellPrice(g, pid) + 0.10); this.render();
+    });
+    el.tabContent.querySelectorAll('[data-price-down]').forEach(b => b.onclick = () => {
+      const pid = b.dataset.priceDown;
+      setSellPrice(g, pid, currentSellPrice(g, pid) - 0.10); this.render();
+    });
+    el.tabContent.querySelectorAll('[data-price-reset]').forEach(b => b.onclick = () => {
+      resetSellPrice(g, b.dataset.priceReset); this.render();
+    });
     const rename = document.getElementById('renameBtn');
     if (rename) rename.onclick = () => {
       const v = document.getElementById('nameInput').value.trim().toUpperCase() || 'FRESH MART';
