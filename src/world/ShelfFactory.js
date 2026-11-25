@@ -1,10 +1,21 @@
 import * as THREE from 'three';
 import { PRODUCTS, SHELF_SPOTS } from '../data/products.js';
 import { labelTexture } from '../utils/textures.js';
+import { preloadModels } from '../utils/AssetLoader.js';
 
 // Geometry + material are shared per product, so refreshing a shelf never
 // allocates (or leaks) GPU resources. Product meshes are cheap clones.
 const assetCache = new Map();
+const modelCache = new Map();
+
+export async function preloadProductModels() {
+  const files = Object.fromEntries(
+    Object.keys(PRODUCTS).map(pid => [pid, `product_${pid}.glb`])
+  );
+  const models = await preloadModels(files);
+  for (const [pid, model] of Object.entries(models)) modelCache.set(pid, model);
+  return modelCache;
+}
 
 function productAssets(pid) {
   if (assetCache.has(pid)) return assetCache.get(pid);
@@ -39,6 +50,13 @@ function productAssets(pid) {
 }
 
 export function makeProductMesh(pid) {
+  const model = modelCache.get(pid);
+  if (model) {
+    const g = model.clone(true);
+    // Blender models sit on their base; procedural meshes are centred.
+    g.position.y = -0.2;
+    return g;
+  }
   const a = productAssets(pid);
   const g = new THREE.Group();
   const m = new THREE.Mesh(a.geo, a.mat);

@@ -1,6 +1,6 @@
 # FRESH MART v2.0
 
-A complete 3D supermarket simulator built with **Three.js + Vite**. All geometry, textures, characters and sound effects are generated procedurally — no external art or audio assets.
+A complete 3D supermarket simulator built with **Three.js + Vite**. The original procedural geometry/textures remain as fallbacks; Blender-exported GLB models in `public/models/` enhance the store, props, characters and products. Sound effects are generated procedurally — no external audio assets.
 
 ## Run
 
@@ -59,6 +59,10 @@ npm test          # zero-dependency smoke tests (node --test)
 
 Progress auto-saves to `localStorage` (save schema v3, older saves migrate automatically); use the pause menu to save manually or reset progress.
 
+## 3D assets (Blender → GLB)
+
+`public/models/` contains 23 low-poly GLB models authored in Blender 5.2 and exported with glTF 2.0: the store shell, display stands, checkout counter, player, cashier, three shoppers, car, street kit, house and one model per product. `src/utils/AssetLoader.js` loads and caches them through `GLTFLoader`; `StoreWorld` swaps the store shell, decorates the scene and replaces the register visual, `Player` uses the player GLB as first-person arms, and `ShelfFactory` replaces shelf products once the GLBs are ready. If a model is missing, the original procedural mesh is kept, so the game still runs.
+
 ## Project structure
 
 ```text
@@ -72,7 +76,9 @@ src/
                           pricing, reputation, objectives
   ui/                     HUD/terminal/pause/checkout/summary UI
   data/                   Products, licenses, layout constants, tuning
-  utils/                  Math, canvas textures, mesh helpers
+  utils/                  Math, canvas textures, mesh helpers, GLB loader
+public/
+  models/                 23 Blender-exported GLB models (store, props, people, products)
 tests/
-  smoke.test.js           data/economy/objective sanity checks (node:test)
+  smoke.test.js           data/economy/objective + GLB export sanity checks (node:test)
 ```
