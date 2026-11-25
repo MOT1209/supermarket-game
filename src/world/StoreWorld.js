@@ -31,11 +31,15 @@ export default class StoreWorld {
     const yard = new THREE.Mesh(new THREE.PlaneGeometry(50, 26), new THREE.MeshStandardMaterial({ map: outsideTexture() }));
     yard.rotation.x = -Math.PI / 2; yard.position.set(0, -0.02, 20); yard.receiveShadow = true; scene.add(yard);
 
+    // Procedural structure is kept as a fallback until the GLB is ready.
+    this.shell = new THREE.Group();
+    scene.add(this.shell);
+
     const wallMat = new THREE.MeshStandardMaterial({ color: 0xe8efe6, roughness: 0.9 });
     const glassMat = new THREE.MeshStandardMaterial({ color: 0x86c7de, transparent: true, opacity: 0.35, roughness: 0.1, metalness: 0.1 });
     const wall = (x, z, w, d, h, mat = wallMat) => {
       const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
-      m.position.set(x, h / 2, z); m.castShadow = true; m.receiveShadow = true; scene.add(m); return m;
+      m.position.set(x, h / 2, z); m.castShadow = true; m.receiveShadow = true; this.shell.add(m); return m;
     };
     wall(0, -12, 24, 0.5, 5);
     wall(-12, 0, 0.5, 24, 5);
@@ -44,11 +48,11 @@ export default class StoreWorld {
     wall(7.25, 12, 9.5, 0.5, 5);
     wall(0, 12, 5, 0.5, 1.2);
     const g1 = new THREE.Mesh(new THREE.BoxGeometry(9.2, 2.2, 0.1), glassMat);
-    g1.position.set(-7.25, 3, 12); scene.add(g1);
-    const g2 = g1.clone(); g2.position.x = 7.25; scene.add(g2);
+    g1.position.set(-7.25, 3, 12); this.shell.add(g1);
+    const g2 = g1.clone(); g2.position.x = 7.25; this.shell.add(g2);
 
     const ceil = new THREE.Mesh(new THREE.PlaneGeometry(24, 24), new THREE.MeshBasicMaterial({ color: 0xe9eee8, side: THREE.DoubleSide }));
-    ceil.rotation.x = Math.PI / 2; ceil.position.y = 5; scene.add(ceil);
+    ceil.rotation.x = Math.PI / 2; ceil.position.y = 5; this.shell.add(ceil);
 
     // --- Decor: wall trim, welcome mat, plants and aisle signs ---
     const trimMat = new THREE.MeshStandardMaterial({ color: 0x9dbb9d, roughness: 0.9 });
@@ -167,11 +171,14 @@ export default class StoreWorld {
   // original meshes remain and gameplay is unaffected.
   async addBlenderProps() {
     const placements = [
+      ['store_shell.glb', [0, 0, 0], 0],
       ['display_stand.glb', [-9.2, 0, 5.5], Math.PI / 2],
       ['display_stand.glb', [9.6, 0, 2.5], -Math.PI / 2],
       ['checkout_counter.glb', null, 0],
       ['cashier.glb', [7, 0, 6.2], Math.PI],
       ['customer_1.glb', [2.5, 0, 10], Math.PI],
+      ['customer_2.glb', [-3.5, 0, 9.5], 0.4],
+      ['customer_3.glb', [4.5, 0, 10.2], -0.6],
       ['car.glb', [2.5, 0, 23], Math.PI],
       ['street_kit.glb', [0, 0, 30], 0],
       ['house.glb', [-11, 0, 27], Math.PI / 4]
@@ -180,6 +187,11 @@ export default class StoreWorld {
       const model = await cloneModel(file);
       if (!model) continue;
       model.rotation.y = rotation;
+      if (file === 'store_shell.glb') {
+        // Keep the textured procedural floor; hide only the duplicated slab.
+        model.traverse(mesh => { if (mesh.isMesh && mesh.name === 'floor_slab') mesh.visible = false; });
+        if (this.shell) this.shell.visible = false;
+      }
       if (file === 'checkout_counter.glb' && this.register) {
         this.register.clear();
         this.register.add(model);

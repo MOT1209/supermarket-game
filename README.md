@@ -61,7 +61,7 @@ Progress auto-saves to `localStorage` (save schema v3, older saves migrate autom
 
 ## 3D assets (Blender → GLB)
 
-`public/models/` contains 23 low-poly GLB models authored in Blender 5.2 and exported with glTF 2.0: the store shell, display stands, checkout counter, player, cashier, three shoppers, car, street kit, house and one model per product. `src/utils/AssetLoader.js` loads and caches them through `GLTFLoader`; `StoreWorld` decorates the scene and swaps the register visual, while `ShelfFactory` replaces shelf products once the GLBs are ready. If a model is missing, the original procedural mesh is kept, so the game still runs.
+`public/models/` contains 23 low-poly GLB models authored in Blender 5.2 and exported with glTF 2.0: the store shell, display stands, checkout counter, player, cashier, three shoppers, car, street kit, house and one model per product. `src/utils/AssetLoader.js` loads and caches them through `GLTFLoader`; `StoreWorld` swaps the store shell, decorates the scene and replaces the register visual, `Player` uses the player GLB as first-person arms, and `ShelfFactory` replaces shelf products once the GLBs are ready. If a model is missing, the original procedural mesh is kept, so the game still runs.
 
 ## Project structure
 

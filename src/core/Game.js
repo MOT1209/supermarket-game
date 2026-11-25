@@ -39,6 +39,7 @@ export default class Game {
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, 0.1, 200);
     this.camera.rotation.order = 'YXZ';
+    this.scene.add(this.camera);
 
     this.state = loadGame() || defaultState();
     this.runtime = {
