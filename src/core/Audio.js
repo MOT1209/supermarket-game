@@ -1,18 +1,30 @@
 // Procedural Web Audio sound effects — no audio files required.
 export default class AudioManager {
-  constructor() { this.ctx = null; }
+  constructor() {
+    this.ctx = null;
+    this.master = null;
+    this.volume = 0.8;
+  }
 
   init() {
     if (!this.ctx) {
       const Ctx = window.AudioContext || window.webkitAudioContext;
       if (!Ctx) return;
       try { this.ctx = new Ctx(); } catch (e) { return; }
+      this.master = this.ctx.createGain();
+      this.master.gain.value = this.volume;
+      this.master.connect(this.ctx.destination);
     }
     if (this.ctx.state === 'suspended') this.ctx.resume();
   }
 
+  setVolume(v) {
+    this.volume = Math.max(0, Math.min(1, v));
+    if (this.master) this.master.gain.value = this.volume;
+  }
+
   tone(freq, dur, type = 'sine', vol = 0.12, delay = 0) {
-    if (!this.ctx) return;
+    if (!this.ctx || !this.master) return;
     const t = this.ctx.currentTime + delay;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
@@ -21,7 +33,7 @@ export default class AudioManager {
     gain.gain.setValueAtTime(0, t);
     gain.gain.linearRampToValueAtTime(vol, t + 0.01);
     gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    osc.connect(gain); gain.connect(this.ctx.destination);
+    osc.connect(gain); gain.connect(this.master);
     osc.start(t); osc.stop(t + dur + 0.02);
   }
 

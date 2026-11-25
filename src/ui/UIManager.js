@@ -5,6 +5,7 @@ import PauseUI from './PauseUI.js';
 
 const IDs = [
   'loading', 'hud', 'prompt', 'cashText', 'timeText', 'clockBox', 'carry', 'msg',
+  'repText',
   'startOverlay', 'pauseOverlay', 'terminalOverlay', 'checkoutOverlay', 'summaryOverlay',
   'tabContent', 'sensVal', 'termCash', 'checkoutBody', 'summaryBody', 'sumDay'
 ];
@@ -72,6 +73,10 @@ export default class UIManager {
 
   updateHUD() {
     this.el.cashText.textContent = money(this.game.state.cash);
+    if (this.el.repText) {
+      const rep = this.game.state.reputation ?? 3;
+      this.el.repText.textContent = rep.toFixed(1);
+    }
   }
 
   updateClock(text, day) {

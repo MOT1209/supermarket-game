@@ -1,7 +1,9 @@
 import * as THREE from 'three';
-import { MAX_CUSTOMERS, sellPrice } from '../data/products.js';
+import { MAX_CUSTOMERS, CATEGORIES, PRODUCTS } from '../data/products.js';
 import { pick, rand, rounded } from '../utils/math.js';
 import { emojiTexture } from '../utils/textures.js';
+import { currentSellPrice } from '../systems/Pricing.js';
+import { onHappyCustomer, onAngryCustomer } from '../systems/Reputation.js';
 import { makeCustomerModel, animateCustomer } from './CustomerModel.js';
 import { refreshShelfVisual } from '../world/ShelfFactory.js';
 
@@ -49,7 +51,12 @@ export function spawnCustomer(game) {
     group: g, rig: model.rig,
     armL: model.armL, armR: model.armR, legL: model.legL, legR: model.legR,
     emoji, state: 'enter', timer: 0, basket: [], queueIndex: -1,
-    emojiTimer: 0, visits: 0, moving: false, walkPhase: rand(0, 6)
+    emojiTimer: 0, visits: 0, moving: false, walkPhase: rand(0, 6),
+    // Shoppers have a favourite aisle; buying from it makes them happier.
+    pref: pick(CATEGORIES),
+    // Seconds they will wait in the checkout queue before leaving angry.
+    patience: rand(22, 40),
+    prefFound: false
   });
 }
 
@@ -66,7 +73,8 @@ function moveToward(c, tx, tz, speed, dt) {
   return false;
 }
 
-export const basketTotal = (game, c) => rounded(c.basket.reduce((t, pid) => t + sellPrice(pid), 0));
+export const basketTotal = (game, c) =>
+  rounded(c.basket.reduce((t, pid) => t + currentSellPrice(game, pid), 0));
 
 export function clearCustomers(game) {
   for (const c of game.runtime.customers) {
@@ -95,6 +103,7 @@ export function doAutoCheckout(game, c) {
   game.state.lifetimeRevenue += total;
   game.runtime.stats.revenue += total;
   game.runtime.stats.happy++;
+  onHappyCustomer(game);
   showEmoji(c, '😊', 2);
   c.state = 'happy';
   game.audio.play('success');
@@ -104,6 +113,9 @@ export function doAutoCheckout(game, c) {
 
 export function updateCustomers(game, dt) {
   const { runtime, state } = game;
+  // Keep queue ordering consistent with array (arrival) order before any
+  // customer reads its queueIndex this frame.
+  reindexQueue(game);
   for (let i = runtime.customers.length - 1; i >= 0; i--) {
     const c = runtime.customers[i];
     c.moving = false;
@@ -123,13 +135,16 @@ export function updateCustomers(game, dt) {
         if (available.length === 0) {
           showEmoji(c, '❓', 2.5);
           runtime.stats.angry++;
+          onAngryCustomer(game);
           c.state = 'angry';
           game.audio.play('error');
         } else if (c.visits >= 3) {
           c.state = 'queue'; c.timer = 0;
           if (basketTotal(game, c) > 15) showEmoji(c, '😠', 3);
         } else {
-          const sh = pick(available);
+          // Prefer the customer's favourite aisle when it is in stock.
+          const prefAvail = available.filter(s => PRODUCTS[s.productId].category === c.pref);
+          const sh = pick(prefAvail.length ? prefAvail : available);
           const [sx, sz] = game.spot(sh.spot);
           c.browseTarget = [sx, sz + 1.3, sh];
           c.state = 'toShelf';
@@ -144,6 +159,7 @@ export function updateCustomers(game, dt) {
           refreshShelfVisual(sh.spot, sh.group, sh, game);
           game.syncShelfData();
           c.basket.push(sh.productId);
+          if (PRODUCTS[sh.productId].category === c.pref) c.prefFound = true;
           game.audio.play('scan');
           c.visits++;
         }
@@ -155,8 +171,17 @@ export function updateCustomers(game, dt) {
         c.state = 'wait'; c.timer = 0;
       }
     } else if (c.state === 'wait') {
-      c.queueIndex = runtime.customers.filter(x =>
-        (x.state === 'queue' || x.state === 'wait') && x.queueIndex >= 0 && x < c).length;
+      // Run out of patience while queueing -> leave unhappy.
+      c.patience -= dt;
+      if (c.patience <= 0) {
+        showEmoji(c, '😡', 2.5);
+        runtime.stats.angry++;
+        onAngryCustomer(game);
+        game.audio.play('error');
+        c.state = 'angry';
+        reindexQueue(game);
+        continue;
+      }
       if (state.staff.cashier && !runtime.checkoutCustomer && c.queueIndex === 0) {
         c.timer += dt;
         if (c.timer > 1.4) doAutoCheckout(game, c);
