@@ -1,7 +1,7 @@
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Roboto,Arial,sans-serif}
 html,body{width:100%;height:100%;overflow:hidden;background:#0a0f14;color:#eef6ef;user-select:none}
 #app{position:fixed;inset:0}
-canvas{display:block}
+canvas{display:block;touch-action:none}
 #hud{position:fixed;inset:0;pointer-events:none;z-index:10}
 #crosshair{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px;border-radius:50%;background:rgba(255,255,255,.85);box-shadow:0 0 0 2px rgba(0,0,0,.35)}
 #prompt{position:absolute;left:50%;top:56%;transform:translateX(-50%);background:rgba(10,20,14,.78);border:1px solid #56c271;padding:6px 14px;border-radius:8px;font-size:14px;opacity:0;transition:opacity .12s;white-space:nowrap}
@@ -12,6 +12,19 @@ canvas{display:block}
 #carry{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);background:rgba(8,18,12,.85);border:1px solid #f0b429;border-radius:8px;padding:6px 14px;font-size:14px;opacity:0;transition:opacity .15s}
 #hint{position:absolute;bottom:14px;left:14px;font-size:12px;opacity:.75;line-height:1.6}
 #msg{position:absolute;top:80px;left:50%;transform:translateX(-50%);background:#2b7a3d;color:#fff;padding:8px 18px;border-radius:20px;font-size:14px;opacity:0;transition:opacity .3s}
+#mobileControls{display:none;position:absolute;inset:0}
+#mobileControls.active{display:block}
+#joystickZone{position:absolute;left:22px;bottom:22px;width:132px;height:132px;border-radius:50%;border:1px solid rgba(120,210,140,.22);background:rgba(8,18,12,.28);pointer-events:auto;touch-action:none}
+#joystickBase{position:absolute;left:50%;top:50%;width:92px;height:92px;margin:-46px;border-radius:50%;border:1px solid rgba(120,210,140,.5);background:rgba(8,18,12,.72);box-shadow:inset 0 0 18px rgba(79,196,106,.12)}
+#joystickKnob{position:absolute;left:50%;top:50%;width:42px;height:42px;border-radius:50%;transform:translate(-50%,-50%);background:linear-gradient(#6fe089,#2b7a3d);border:1px solid #a5f4b6;box-shadow:0 3px 10px rgba(0,0,0,.5)}
+.joy-label{position:absolute;bottom:8px;left:0;right:0;text-align:center;font-size:10px;letter-spacing:.14em;opacity:.65}
+#touchActions{position:absolute;right:20px;bottom:22px;display:flex;align-items:flex-end;gap:10px;pointer-events:auto;touch-action:none}
+.touch-btn{pointer-events:auto;touch-action:none;min-width:62px;min-height:62px;padding:6px 4px;border-radius:50%;font-size:13px;line-height:1.1;text-align:center}
+.touch-btn span{display:block;font-size:10px;font-weight:500;opacity:.9}
+.touch-btn.active{filter:brightness(1.35);box-shadow:0 0 0 3px rgba(255,255,255,.35)}
+.lock-bar{position:fixed;left:50%;top:64px;transform:translateX(-50%);z-index:16;display:none;align-items:center;gap:12px;max-width:min(92vw,620px);background:rgba(72,24,24,.94);border:1px solid #ff8a8a;border-radius:10px;padding:10px 14px;box-shadow:0 12px 40px rgba(0,0,0,.5);font-size:13px;pointer-events:auto}
+.lock-bar.show{display:flex}
+.lock-bar .btn{white-space:nowrap}
 .btn{pointer-events:auto;cursor:pointer;background:linear-gradient(#3fae5a,#2b7a3d);border:1px solid #6fe089;color:#fff;padding:8px 14px;border-radius:8px;font-size:14px;font-weight:600;transition:filter .12s}
 .btn:hover{filter:brightness(1.15)}
 .btn.alt{background:linear-gradient(#e08a2b,#b85f16);border-color:#ffbf6b}
@@ -43,3 +56,24 @@ input[type=range]{width:100%;accent-color:#4fc46a}
 .small{font-size:12px;opacity:.8}
 .badge{display:inline-block;background:#2b7a3d;border-radius:6px;padding:2px 8px;font-size:12px;margin-left:6px}
 #loading{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:#0a0f14;font-size:20px;color:#8ff0a4}
+@media (pointer:coarse){#hint{display:none}}
+@media (max-width:700px){
+  #topbar{top:8px;left:8px;right:8px;gap:6px}
+  .panel{font-size:12px;padding:6px 9px}
+  #closeBtn{padding:6px 9px;font-size:12px}
+  #carry{bottom:170px;font-size:12px}
+  #msg{top:64px;font-size:12px;padding:6px 12px}
+  #joystickZone{left:14px;bottom:14px;width:118px;height:118px}
+  #joystickBase{width:82px;height:82px;margin:-41px}
+  #joystickKnob{width:38px;height:38px}
+  #touchActions{right:12px;bottom:14px;gap:8px}
+  .touch-btn{min-width:56px;min-height:56px}
+  .lock-bar{top:56px;flex-direction:column;text-align:center}
+}
+@media (max-height:480px){
+  #joystickZone{width:104px;height:104px}
+  #joystickBase{width:74px;height:74px;margin:-37px}
+  #touchActions{bottom:8px}
+  .touch-btn{min-width:52px;min-height:52px}
+  #carry{bottom:120px}
+}

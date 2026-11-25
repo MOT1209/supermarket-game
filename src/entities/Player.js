@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { clamp } from '../utils/math.js';
+import { movementToWorld } from '../core/controls.js';
 import { cloneModel } from '../utils/AssetLoader.js';
 
 export default class Player {
@@ -30,30 +31,23 @@ export default class Player {
   }
 
   update(dt) {
-    const keys = this.game.input.keys;
-    if (keys['w'] || keys['arrowup']) this.vel.z -= 1;
-    if (keys['s'] || keys['arrowdown']) this.vel.z += 1;
-    if (keys['a'] || keys['arrowleft']) this.vel.x -= 1;
-    if (keys['d'] || keys['arrowright']) this.vel.x += 1;
-    const sprint = keys['shift'] || false;
+    const axes = this.game.input.getMoveAxes();
+    const sprint = this.game.input.isSprinting();
     const speed = sprint ? 8.5 : 4.8;
-    this.vel.clampLength(0, 1);
+    this.vel.set(axes.x, 0, axes.z);
 
-    const sin = Math.sin(this.yaw), cos = Math.cos(this.yaw);
-    const dx = (this.vel.x * cos - this.vel.z * sin) * speed * dt;
-    const dz = (this.vel.x * sin + this.vel.z * cos) * speed * dt;
+    const { x: dx, z: dz } = movementToWorld(axes, this.yaw, speed, dt);
     if (!this.game.world.collides(this.pos.x + dx, this.pos.z)) this.pos.x += dx;
     if (!this.game.world.collides(this.pos.x, this.pos.z + dz)) this.pos.z += dz;
     this.pos.x = clamp(this.pos.x, -16, 16);
     this.pos.z = clamp(this.pos.z, -12, 20);
 
-    const moving = this.vel.lengthSq() > 0.01;
+    const moving = axes.x * axes.x + axes.z * axes.z > 0.01;
     if (moving) this.bob += dt * (sprint ? 14 : 9);
     const y = 1.7 + (moving ? Math.sin(this.bob) * 0.035 : 0);
     if (this.viewModel) this.viewModel.position.y = -0.85 + (moving ? Math.sin(this.bob * 0.5) * 0.02 : 0);
     this.game.camera.position.set(this.pos.x, y, this.pos.z);
     this.game.camera.rotation.set(this.pitch, this.yaw, 0);
-    this.vel.set(0, 0, 0);
 
     const carried = this.game.runtime.carried;
     if (carried) {

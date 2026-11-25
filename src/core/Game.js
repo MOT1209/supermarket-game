@@ -66,6 +66,33 @@ export default class Game {
     });
   }
 
+  setMode(mode) {
+    if (this.mode === mode) return;
+    this.mode = mode;
+    if (mode !== 'playing') this.input?.clearKeys();
+    this.ui?.syncMode?.(mode);
+  }
+
+  startPlaying() {
+    this.setMode('playing');
+    this.ui.hideAll();
+    this.input.clearKeys();
+    this.lastTime = performance.now();
+    if (this.input.wantsPointerLock) this.input.requestLock();
+  }
+
+  pauseGame() {
+    if (this.mode !== 'playing') return;
+    this.setMode('paused');
+    this.input.exitLock();
+    this.ui.showPauseSettings();
+  }
+
+  resumeGame() {
+    if (this.mode !== 'paused') return;
+    this.startPlaying();
+  }
+
   applyGraphics() {
     const g = this.state.graphics || 'high';
     const dpr = window.devicePixelRatio || 1;
@@ -100,6 +127,7 @@ export default class Game {
     this.lastAutosave = performance.now();
     document.getElementById('loading').style.display = 'none';
     this.ui.updateHUD();
+    this.ui.syncMode(this.mode);
     this.camera.position.copy(this.player.pos);
     requestAnimationFrame(t => this.animate(t));
   }
@@ -167,8 +195,15 @@ export default class Game {
   }
 
   onEscape() {
-    if (this.ui.el.terminalOverlay.classList.contains('show')) this.ui.closeTerminal();
-    else if (this.mode === 'playing') this.input.exitLock();
+    if (this.ui.el.terminalOverlay.classList.contains('show')) {
+      this.ui.closeTerminal();
+    } else if (this.mode === 'playing') {
+      this.pauseGame();
+    } else if (this.mode === 'paused' && !this.input.justUnlocked()) {
+      // Escape can resume, but ignore the same keypress that the browser used
+      // to release pointer lock (it arrives as an unlock first on some browsers).
+      this.resumeGame();
+    }
   }
 
   syncShelfData() {
@@ -190,7 +225,7 @@ export default class Game {
 
   closeStore() {
     if (this.mode === 'summary') return;
-    this.mode = 'summary';
+    this.setMode('summary');
     this.input.exitLock();
     const wage = wages(this);
     const upkeep = operatingCost(this);
@@ -225,9 +260,7 @@ export default class Game {
     clearCustomers(this);
     resetStaffTimers();
     fluctuatePrices(this);
-    this.ui.hide('summary');
-    this.mode = 'playing';
-    this.input.requestLock();
+    this.startPlaying();
     spawnDelivery(this);
     this.ui.updateHUD();
     this.save(false);
