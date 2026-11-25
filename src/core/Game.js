@@ -4,6 +4,7 @@ import {
 } from '../data/products.js';
 import { clamp, rounded } from '../utils/math.js';
 import { loadGame, saveGame, defaultState, deleteSave } from './SaveSystem.js';
+import { createDebouncedSave } from './saveScheduler.js';
 import AudioManager from './Audio.js';
 import Input from './Input.js';
 import Lighting from '../world/Lighting.js';
@@ -59,10 +60,19 @@ export default class Game {
     this.checkout = new CheckoutSystem(this);
     this.applyGraphics();
 
+    // Frequent gameplay saves are coalesced into one localStorage write.
+    this.saveScheduler = createDebouncedSave(() => this.writeSave(), 400);
+
     addEventListener('resize', () => {
       this.camera.aspect = innerWidth / innerHeight;
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(innerWidth, innerHeight);
+    });
+
+    // A hidden/closing page may not run pending timers, so persist now.
+    addEventListener('pagehide', () => this.saveScheduler.flush());
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) this.saveScheduler.flush();
     });
   }
 
@@ -134,6 +144,9 @@ export default class Game {
 
   animate(now) {
     requestAnimationFrame(t => this.animate(t));
+    // Don't burn CPU/GPU on a tab the player can't see; also avoids a large
+    // dt spike when the tab becomes visible again.
+    if (document.hidden) { this.lastTime = now; return; }
     const dt = Math.min(0.05, (now - this.lastTime) / 1000);
     this.lastTime = now;
 
@@ -214,11 +227,26 @@ export default class Game {
     });
   }
 
-  save(showToast = false) {
-    if (saveGame(this.state) && showToast) this.ui.toast('💾 Game saved');
+  writeSave() {
+    this.syncShelfData();
+    return saveGame(this.state);
+  }
+
+  // Regular gameplay saves are debounced; manual saves and critical state
+  // transitions (closing/day change) write immediately.
+  save(showToast = false, critical = false) {
+    if (critical || showToast) {
+      this.saveScheduler.cancel();
+      if (this.writeSave() && showToast) this.ui.toast('💾 Game saved');
+      return true;
+    }
+    this.saveScheduler.schedule();
+    return false;
   }
 
   newGame() {
+    // Prevent the pagehide flush from re-creating the save we just deleted.
+    this.saveScheduler?.cancel();
     deleteSave();
     location.reload();
   }
@@ -249,7 +277,7 @@ export default class Game {
       angry: st.angry,
       cash: this.state.cash
     });
-    this.save(false);
+    this.save(false, true);
   }
 
   nextDay() {
@@ -263,7 +291,7 @@ export default class Game {
     this.startPlaying();
     spawnDelivery(this);
     this.ui.updateHUD();
-    this.save(false);
+    this.save(false, true);
     this.ui.toast(`Day ${this.state.day} begins — new prices & delivery!`);
   }
 }

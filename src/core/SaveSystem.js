@@ -1,7 +1,10 @@
 import {
-  PRODUCTS, STARTING_SHELVES, SAVE_KEY, SHELF_CAPACITY,
-  sellPrice, REPUTATION_START
+  PRODUCTS, LICENSES, SHELF_SPOTS, STARTING_SHELVES, SAVE_KEY, SHELF_CAPACITY,
+  sellPrice, REPUTATION_START, REPUTATION_MAX
 } from '../data/products.js';
+import { rounded } from '../utils/math.js';
+
+const GRAPHICS_MODES = new Set(['low', 'medium', 'high']);
 
 export function defaultState() {
   const prices = {}, trends = {}, sellPrices = {};
@@ -34,26 +37,68 @@ export function defaultState() {
   };
 }
 
+// Finite numbers are clamped into a safe range; missing/corrupt values fall
+// back to the default. This keeps a hand-edited or truncated save playable.
+function safeNumber(value, fallback, min, max) {
+  return Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback;
+}
+
+function safeMap(saved, base, min, max) {
+  const result = { ...base };
+  if (!saved || typeof saved !== 'object') return result;
+  for (const key of Object.keys(base)) {
+    result[key] = safeNumber(saved[key], base[key], min, max);
+  }
+  return result;
+}
+
 // Accepts older saves (v1 had the same shape, minus the version field).
-function migrate(data) {
+export function migrate(data) {
   const base = defaultState();
   if (!data || !Array.isArray(data.shelves)) return null;
-  const migrated = { ...base, ...data, version: 3 };
-  migrated.prices = { ...base.prices, ...(data.prices || {}) };
-  migrated.trends = { ...base.trends, ...(data.trends || {}) };
-  migrated.staff = { ...base.staff, ...(data.staff || {}) };
-  migrated.sellPrices = { ...base.sellPrices, ...(data.sellPrices || {}) };
-  if (!Number.isFinite(migrated.reputation)) migrated.reputation = REPUTATION_START;
-  if (!Number.isFinite(migrated.volume)) migrated.volume = 0.8;
-  if (!migrated.graphics) migrated.graphics = 'high';
-  migrated.shelves = data.shelves.map((s, i) => ({
-    productId: PRODUCTS[s.productId] ? s.productId : STARTING_SHELVES[0],
-    stock: Number.isFinite(s.stock) ? s.stock : 0,
-    capacity: Number.isFinite(s.capacity) ? s.capacity : SHELF_CAPACITY,
-    spot: Number.isFinite(s.spot) ? s.spot : i,
-    fridge: !!s.fridge
-  }));
-  return migrated;
+  const m = { ...base, ...data, version: 3 };
+
+  m.cash = rounded(safeNumber(m.cash, base.cash, 0, 1e12));
+  m.day = Math.floor(safeNumber(m.day, base.day, 1, 100000));
+  m.level = Math.floor(safeNumber(m.level, base.level, 1, 100));
+  m.clock = safeNumber(m.clock, 0, 0, 86400);
+  m.lifetimeRevenue = safeNumber(m.lifetimeRevenue, 0, 0, 1e15);
+  m.reputation = safeNumber(m.reputation, REPUTATION_START, 0, REPUTATION_MAX);
+  m.sensitivity = (Number.isFinite(m.sensitivity) && m.sensitivity > 0 && m.sensitivity <= 0.01)
+    ? m.sensitivity : base.sensitivity;
+  m.volume = safeNumber(m.volume, 0.8, 0, 1);
+  m.graphics = GRAPHICS_MODES.has(m.graphics) ? m.graphics : base.graphics;
+  m.storeName = (typeof m.storeName === 'string' && m.storeName.trim())
+    ? m.storeName.trim().slice(0, 24) : base.storeName;
+
+  m.prices = safeMap(data.prices, base.prices, 0.01, 1e6);
+  m.trends = safeMap(data.trends, base.trends, -1, 1);
+  m.sellPrices = safeMap(data.sellPrices, base.sellPrices, 0.01, 1e6);
+  m.licenses = Array.isArray(data.licenses)
+    ? [...new Set(data.licenses.filter(id => LICENSES.some(l => l.id === id)))] : [];
+  m.staff = {
+    restocker: !!(data.staff && data.staff.restocker),
+    cashier: !!(data.staff && data.staff.cashier)
+  };
+
+  const usedSpots = new Set();
+  m.shelves = data.shelves.map((s, i) => {
+    const productId = PRODUCTS[s?.productId] ? s.productId : STARTING_SHELVES[0];
+    const capacity = Math.floor(safeNumber(s?.capacity, SHELF_CAPACITY, 1, 1000));
+    const requestedSpot = Math.floor(safeNumber(s?.spot, i, 0, SHELF_SPOTS.length - 1));
+    let spot = requestedSpot;
+    while (usedSpots.has(spot)) spot = (spot + 1) % SHELF_SPOTS.length;
+    usedSpots.add(spot);
+    return {
+      productId,
+      stock: Math.floor(safeNumber(s?.stock, 0, 0, capacity)),
+      capacity,
+      spot,
+      fridge: !!s?.fridge
+    };
+  });
+
+  return m;
 }
 
 export function loadGame() {

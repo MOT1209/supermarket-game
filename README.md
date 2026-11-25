@@ -28,7 +28,16 @@ npm test          # zero-dependency smoke tests (node --test)
 | Mouse | Look around |
 | E | Interact (pick up box, stock shelf, checkout, terminal, dumpster) |
 | Q | Drop the box you are carrying |
+| L | Retry mouse lock after a denied/expired Pointer Lock request |
 | Esc | Pause / settings |
+| Touch joystick | Move (mobile/tablet) |
+| Drag on screen | Look around (mobile/tablet) |
+| Touch buttons | Interact / Drop / Sprint (mobile/tablet) |
+
+Movement is relative to the camera yaw (W always goes where you look). Keys are
+cleared on focus loss, and the game pauses when the window loses focus or the
+mouse lock is released. On touch devices the Pointer Lock UI is replaced by
+on-screen controls automatically.
 
 ## Gameplay loop
 
@@ -57,7 +66,7 @@ npm test          # zero-dependency smoke tests (node --test)
 - **Dynamic pricing** — wholesale prices move daily; your shelf price is independent and clamped between cost and 4× the default markup.
 - **Settings** — pause menu offers mouse sensitivity, master **volume** and **graphics** (low/medium/high: shadows + pixel ratio).
 
-Progress auto-saves to `localStorage` (save schema v3, older saves migrate automatically); use the pause menu to save manually or reset progress.
+Progress auto-saves to `localStorage` (save schema v3, older saves migrate automatically and corrupt values fall back to safe defaults). Gameplay saves are debounced into a single write and flushed on page hide; manual saves and day transitions write immediately. Use the pause menu to save manually or reset progress.
 
 ## 3D assets (Blender → GLB)
 
@@ -81,4 +90,8 @@ public/
   models/                 23 Blender-exported GLB models (store, props, people, products)
 tests/
   smoke.test.js           data/economy/objective + GLB export sanity checks (node:test)
+  controls.test.js        yaw-relative movement, key normalization, sprint, lock errors
+  save.test.js            save migration/validation + debounced write scheduling
 ```
+
+`npm test` runs all `tests/**/*.test.js` with zero dependencies (`node --test`).

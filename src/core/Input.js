@@ -70,6 +70,7 @@ export default class Input {
     }
 
     if (e.repeat || this.game.mode !== 'playing') return;
+    if (!ACTION_KEYS.has(k)) return;
     if (k === 'e') this.game.onInteract();
     else if (k === 'q') this.game.onDrop();
     else if (k === 'l' && this.wantsPointerLock && !this.locked) this.requestLock();
