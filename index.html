@@ -22,7 +22,23 @@
   </div>
   <div id="carry"></div>
   <div id="msg"></div>
+  <div id="mobileControls" aria-label="Touch controls">
+    <div id="joystickZone" aria-label="Movement joystick">
+      <div id="joystickBase"><div id="joystickKnob"></div></div>
+      <span class="joy-label">MOVE</span>
+    </div>
+    <div id="touchActions">
+      <button class="btn touch-btn" id="touchInteract" type="button">E<span>Use</span></button>
+      <button class="btn touch-btn" id="touchDrop" type="button">Q<span>Drop</span></button>
+      <button class="btn alt touch-btn" id="touchSprint" type="button">⇧<span>Sprint</span></button>
+    </div>
+  </div>
   <div id="hint">WASD move · Shift sprint · Mouse look · E interact · Q drop box · Esc pause<br>Terminal: plan your store · Deliveries arrive out front</div>
+</div>
+
+<div class="lock-bar" id="lockBar" role="status" aria-live="polite">
+  <span id="lockMsg">Mouse not captured. Click below to retry mouse look.</span>
+  <button class="btn" id="lockRetry" type="button">Retry mouse look</button>
 </div>
 
 <div class="overlay show" id="startOverlay">

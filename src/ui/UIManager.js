@@ -7,7 +7,8 @@ const IDs = [
   'loading', 'hud', 'prompt', 'cashText', 'timeText', 'clockBox', 'carry', 'msg',
   'repText',
   'startOverlay', 'pauseOverlay', 'terminalOverlay', 'checkoutOverlay', 'summaryOverlay',
-  'tabContent', 'sensVal', 'termCash', 'checkoutBody', 'summaryBody', 'sumDay'
+  'tabContent', 'sensVal', 'termCash', 'checkoutBody', 'summaryBody', 'sumDay',
+  'lockBar', 'lockMsg'
 ];
 
 export default class UIManager {
@@ -25,17 +26,15 @@ export default class UIManager {
     const g = this.game, el = this.el;
     document.getElementById('startBtn').onclick = () => {
       g.audio.init();
-      this.hideAll();
-      g.mode = 'playing';
       this.updateHUD();
-      g.input.requestLock();
+      g.startPlaying();
     };
     document.getElementById('newGameBtn').onclick = () => {
       if (confirm('Start a completely new game? Your current save will be erased.')) g.newGame();
     };
-    document.getElementById('resumeBtn').onclick = () => {
-      this.hideAll(); g.mode = 'playing'; g.input.requestLock();
-    };
+    document.getElementById('resumeBtn').onclick = () => g.resumeGame();
+    // The whole bar (including its button) is a single retry gesture.
+    this.el.lockBar.onclick = () => g.input.requestLock();
     document.getElementById('saveBtn').onclick = () => g.save(true);
     document.getElementById('resetBtn').onclick = () => {
       if (confirm('Reset all saved progress?')) g.newGame();
@@ -60,6 +59,21 @@ export default class UIManager {
 
   hideAll() {
     for (const key of ['start', 'pause', 'terminal', 'checkout', 'summary']) this.hide(key);
+  }
+
+  syncMode(mode) {
+    this.game.input?.touch?.setVisible(mode === 'playing');
+    if (mode !== 'playing') this.hideLockError();
+  }
+
+  showLockError(message) {
+    if (!this.el.lockBar) return;
+    this.el.lockMsg.textContent = message;
+    this.el.lockBar.classList.add('show');
+  }
+
+  hideLockError() {
+    this.el.lockBar?.classList.remove('show');
   }
 
   showPauseSettings() { this.show('pause'); this.pause.refresh(); }
@@ -98,7 +112,7 @@ export default class UIManager {
   }
 
   openTerminal() {
-    this.game.mode = 'modal';
+    this.game.setMode('modal');
     this.game.input.exitLock();
     this.terminal.activeTab = 'stock';
     this.show('terminal');
@@ -106,9 +120,7 @@ export default class UIManager {
   }
 
   closeTerminal() {
-    this.hide('terminal');
-    this.game.mode = 'playing';
-    this.game.input.requestLock();
+    this.game.startPlaying();
   }
 
   showCheckout(html) {

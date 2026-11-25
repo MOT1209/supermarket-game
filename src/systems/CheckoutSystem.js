@@ -10,7 +10,7 @@ export default class CheckoutSystem {
   open(c) {
     const game = this.game;
     game.runtime.checkoutCustomer = c;
-    game.mode = 'modal';
+    game.setMode('modal');
     game.input.exitLock();
     const total = basketTotal(game, c);
     const list = c.basket
@@ -62,17 +62,13 @@ export default class CheckoutSystem {
   cancel() {
     const game = this.game;
     game.runtime.checkoutCustomer = null;
-    game.ui.hide('checkout');
-    game.mode = 'playing';
-    game.input.requestLock();
+    game.startPlaying();
   }
 
   finish(c, ok, total) {
     const game = this.game;
-    game.ui.hide('checkout');
     game.runtime.checkoutCustomer = null;
-    game.mode = 'playing';
-    game.input.requestLock();
+    game.startPlaying();
     if (ok) {
       game.state.cash = rounded(game.state.cash + total);
       game.state.lifetimeRevenue += total;
