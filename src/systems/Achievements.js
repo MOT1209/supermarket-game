@@ -3,21 +3,63 @@ import { RECYCLE_BONUS } from '../data/products.js';
 // Persistent milestones. Each test receives lifetime totals computed from
 // completed days plus the current day's runtime stats.
 export const ACHIEVEMENTS = [
-  { id: 'first_day',  icon: '🌅', name: 'Open for Business', desc: 'Finish your first day',                  test: c => c.days >= 1 },
-  { id: 'cash_1000',  icon: '💵', name: 'Thousand Bucks',     desc: 'Hold $1,000 in cash',                    test: c => c.cash >= 1000 },
-  { id: 'stars_5',    icon: '⭐', name: 'Five-Star Store',    desc: 'Reach a 5-star reputation',              test: c => c.rep >= 5 },
-  { id: 'happy_50',   icon: '😊', name: 'Crowd Pleaser',      desc: 'Serve 50 happy customers in total',      test: c => c.happy >= 50 },
-  { id: 'recycle_20', icon: '♻',  name: 'Green Market',       desc: 'Recycle 20 empty boxes',                 test: c => c.recycled >= 20 },
-  { id: 'licenses_4', icon: '📜', name: 'Wide Selection',     desc: 'Own 4 product licenses',                 test: c => c.licenses >= 4 },
-  { id: 'perfect_day',icon: '🏆', name: 'Flawless Day',       desc: 'Close a day with 5+ happy and 0 angry',  test: c => !!c.perfectDay }
+  {
+    id: 'first_day',
+    icon: '🌅',
+    name: 'Open for Business',
+    desc: 'Finish your first day',
+    test: (c) => c.days >= 1
+  },
+  {
+    id: 'cash_1000',
+    icon: '💵',
+    name: 'Thousand Bucks',
+    desc: 'Hold $1,000 in cash',
+    test: (c) => c.cash >= 1000
+  },
+  {
+    id: 'stars_5',
+    icon: '⭐',
+    name: 'Five-Star Store',
+    desc: 'Reach a 5-star reputation',
+    test: (c) => c.rep >= 5
+  },
+  {
+    id: 'happy_50',
+    icon: '😊',
+    name: 'Crowd Pleaser',
+    desc: 'Serve 50 happy customers in total',
+    test: (c) => c.happy >= 50
+  },
+  {
+    id: 'recycle_20',
+    icon: '♻',
+    name: 'Green Market',
+    desc: 'Recycle 20 empty boxes',
+    test: (c) => c.recycled >= 20
+  },
+  {
+    id: 'licenses_4',
+    icon: '📜',
+    name: 'Wide Selection',
+    desc: 'Own 4 product licenses',
+    test: (c) => c.licenses >= 4
+  },
+  {
+    id: 'perfect_day',
+    icon: '🏆',
+    name: 'Flawless Day',
+    desc: 'Close a day with 5+ happy and 0 angry',
+    test: (c) => !!c.perfectDay
+  }
 ];
 
-export const ACHIEVEMENT_IDS = new Set(ACHIEVEMENTS.map(a => a.id));
+export const ACHIEVEMENT_IDS = new Set(ACHIEVEMENTS.map((a) => a.id));
 
 function totals(state, stats) {
   const history = Array.isArray(state.history) ? state.history : [];
   const rows = stats ? [...history, stats] : history;
-  const sum = key => rows.reduce((n, r) => n + (Number(r?.[key]) || 0), 0);
+  const sum = (key) => rows.reduce((n, r) => n + (Number(r?.[key]) || 0), 0);
   return {
     days: history.length,
     cash: Number(state.cash) || 0,
@@ -37,8 +79,12 @@ export function checkAchievements(state, stats = null, closedDay = null) {
   const earned = [];
   for (const a of ACHIEVEMENTS) {
     if (state.achievements.includes(a.id)) continue;
-    let ok = false;
-    try { ok = !!a.test(c); } catch { ok = false; }
+    let ok;
+    try {
+      ok = !!a.test(c);
+    } catch {
+      ok = false;
+    }
     if (ok) {
       state.achievements.push(a.id);
       earned.push(a);

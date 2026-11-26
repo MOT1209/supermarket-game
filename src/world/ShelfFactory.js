@@ -9,9 +9,7 @@ const assetCache = new Map();
 const modelCache = new Map();
 
 export async function preloadProductModels() {
-  const files = Object.fromEntries(
-    Object.keys(PRODUCTS).map(pid => [pid, `product_${pid}.glb`])
-  );
+  const files = Object.fromEntries(Object.keys(PRODUCTS).map((pid) => [pid, `product_${pid}.glb`]));
   const models = await preloadModels(files);
   for (const [pid, model] of Object.entries(models)) modelCache.set(pid, model);
   return modelCache;
@@ -23,18 +21,41 @@ function productAssets(pid) {
   const mat = new THREE.MeshStandardMaterial({ color: p.color, roughness: 0.6 });
   let geo;
   switch (p.shape) {
-    case 'carton': geo = new THREE.BoxGeometry(0.32, 0.44, 0.24); break;
-    case 'loaf':   geo = new THREE.BoxGeometry(0.4, 0.22, 0.24); break;
-    case 'sphere': geo = new THREE.SphereGeometry(0.16, 8, 8); break;
-    case 'bottle': geo = new THREE.CylinderGeometry(0.1, 0.1, 0.42, 10); break;
-    case 'can':    geo = new THREE.CylinderGeometry(0.12, 0.12, 0.34, 10); break;
-    case 'wedge':  geo = new THREE.BoxGeometry(0.34, 0.2, 0.3); break;
-    case 'bag':    geo = new THREE.BoxGeometry(0.34, 0.4, 0.12); break;
-    case 'egg':    geo = new THREE.SphereGeometry(0.13, 10, 8); break;
-    case 'cup':    geo = new THREE.CylinderGeometry(0.12, 0.09, 0.3, 12); break;
-    case 'box':    geo = new THREE.BoxGeometry(0.3, 0.46, 0.16); break;
-    case 'steak':  geo = new THREE.BoxGeometry(0.36, 0.14, 0.26); break;
-    default:       geo = new THREE.BoxGeometry(0.3, 0.35, 0.25);
+    case 'carton':
+      geo = new THREE.BoxGeometry(0.32, 0.44, 0.24);
+      break;
+    case 'loaf':
+      geo = new THREE.BoxGeometry(0.4, 0.22, 0.24);
+      break;
+    case 'sphere':
+      geo = new THREE.SphereGeometry(0.16, 8, 8);
+      break;
+    case 'bottle':
+      geo = new THREE.CylinderGeometry(0.1, 0.1, 0.42, 10);
+      break;
+    case 'can':
+      geo = new THREE.CylinderGeometry(0.12, 0.12, 0.34, 10);
+      break;
+    case 'wedge':
+      geo = new THREE.BoxGeometry(0.34, 0.2, 0.3);
+      break;
+    case 'bag':
+      geo = new THREE.BoxGeometry(0.34, 0.4, 0.12);
+      break;
+    case 'egg':
+      geo = new THREE.SphereGeometry(0.13, 10, 8);
+      break;
+    case 'cup':
+      geo = new THREE.CylinderGeometry(0.12, 0.09, 0.3, 12);
+      break;
+    case 'box':
+      geo = new THREE.BoxGeometry(0.3, 0.46, 0.16);
+      break;
+    case 'steak':
+      geo = new THREE.BoxGeometry(0.36, 0.14, 0.26);
+      break;
+    default:
+      geo = new THREE.BoxGeometry(0.3, 0.35, 0.25);
   }
   const assets = { geo, mat, cap: null, capY: 0 };
   if (p.shape === 'bottle' || p.shape === 'can') {
@@ -70,10 +91,11 @@ export function makeProductMesh(pid) {
   return g;
 }
 
-export const shelfPrompt = sh => `${PRODUCTS[sh.productId].name} shelf — ${sh.stock}/${sh.capacity}`;
+export const shelfPrompt = (sh) =>
+  `${PRODUCTS[sh.productId].name} shelf — ${sh.stock}/${sh.capacity}`;
 
 export function refreshShelfVisual(spot, group, shd, game) {
-  const found = game.runtime.shelves.find(s => s.spot === spot);
+  const found = game.runtime.shelves.find((s) => s.spot === spot);
   const sh = shd || found;
   const g = group || (found && found.group);
   if (!g || !sh) return;
@@ -103,25 +125,32 @@ export function createShelfMesh(shd, game) {
   const sideGeo = new THREE.BoxGeometry(0.12, 2.4, 0.9);
   const s1 = new THREE.Mesh(sideGeo, frameMat);
   const s2 = new THREE.Mesh(sideGeo, frameMat);
-  s1.position.set(-1.05, 1.2, 0); s2.position.set(1.05, 1.2, 0);
+  s1.position.set(-1.05, 1.2, 0);
+  s2.position.set(1.05, 1.2, 0);
   s1.castShadow = s2.castShadow = true;
   g.add(s1, s2);
   for (const y of [0.25, 0.95, 1.65, 2.3]) {
     const b = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.08, 0.9), frameMat);
-    b.position.set(0, y, 0); b.castShadow = b.receiveShadow = true; g.add(b);
+    b.position.set(0, y, 0);
+    b.castShadow = b.receiveShadow = true;
+    g.add(b);
   }
   const back = new THREE.Mesh(new THREE.BoxGeometry(2.1, 2.4, 0.08), frameMat);
-  back.position.set(0, 1.2, -0.45); g.add(back);
+  back.position.set(0, 1.2, -0.45);
+  g.add(back);
   if (shd.fridge) {
     const gl = new THREE.Mesh(
       new THREE.BoxGeometry(2.0, 1.55, 0.05),
       new THREE.MeshStandardMaterial({ color: 0xbfe6f5, transparent: true, opacity: 0.18 })
     );
-    gl.position.set(0, 1.3, 0.48); g.add(gl);
+    gl.position.set(0, 1.3, 0.48);
+    g.add(gl);
   }
   const label = new THREE.Mesh(
     new THREE.PlaneGeometry(1.8, 0.45),
-    new THREE.MeshBasicMaterial({ map: labelTexture(PRODUCTS[shd.productId].name, PRODUCTS[shd.productId].color) })
+    new THREE.MeshBasicMaterial({
+      map: labelTexture(PRODUCTS[shd.productId].name, PRODUCTS[shd.productId].color)
+    })
   );
   label.position.set(0, 2.62, 0.2);
   g.add(label);

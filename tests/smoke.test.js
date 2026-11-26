@@ -5,12 +5,22 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  PRODUCTS, LICENSES, CATEGORIES, SHELF_SPOTS, STARTING_SHELVES,
-  sellPrice, maxSpots, DEFAULT_MARKUP, RENT_PER_DAY, FRIDGE_UPKEEP,
-  REPUTATION_MAX, REPUTATION_START, SHELF_CAPACITY
+  PRODUCTS,
+  LICENSES,
+  CATEGORIES,
+  SHELF_SPOTS,
+  STARTING_SHELVES,
+  sellPrice,
+  maxSpots,
+  DEFAULT_MARKUP,
+  RENT_PER_DAY,
+  FRIDGE_UPKEEP,
+  REPUTATION_MAX,
+  REPUTATION_START,
+  SHELF_CAPACITY
 } from '../src/data/products.js';
 import { money, clamp, rounded, pick, rand } from '../src/utils/math.js';
-import { defaultState } from '../src/core/SaveSystem.js';
+import { defaultState, migrate } from '../src/core/SaveSystem.js';
 import { objectiveFor, evaluateObjective } from '../src/systems/Objectives.js';
 
 test('every product has a valid shape, category and license', () => {
@@ -20,7 +30,7 @@ test('every product has a valid shape, category and license', () => {
     assert.ok(p.shape, `${pid} needs a shape`);
     assert.ok(CATEGORIES.includes(p.category), `${pid} has unknown category`);
     if (p.license) {
-      const lic = LICENSES.find(l => l.id === p.license);
+      const lic = LICENSES.find((l) => l.id === p.license);
       assert.ok(lic, `${pid} references missing license ${p.license}`);
       assert.equal(lic.product, pid, `${pid} license product mismatch`);
     }
@@ -37,13 +47,15 @@ test('starting shelves are valid, unlicensed and fit physical spots', () => {
 
 test('maxSpots never exceeds physical shelf spots', () => {
   for (let level = 1; level <= 20; level++) {
-    assert.ok(maxSpots(level) <= SHELF_SPOTS.length,
-      `level ${level} unlocks ${maxSpots(level)} > ${SHELF_SPOTS.length}`);
+    assert.ok(
+      maxSpots(level) <= SHELF_SPOTS.length,
+      `level ${level} unlocks ${maxSpots(level)} > ${SHELF_SPOTS.length}`
+    );
     assert.ok(maxSpots(level) >= 4, 'at least the starting 4 spots');
   }
   // Monotonic up to the cap
   assert.ok(maxSpots(2) >= maxSpots(1));
-  assert.equal(maxSpots(3), SHELF_SPOTS.length);
+  assert.equal(maxSpots(20), SHELF_SPOTS.length);
 });
 
 test('default markup and sell price are sane', () => {
@@ -57,7 +69,7 @@ test('default markup and sell price are sane', () => {
 
 test('defaultState is complete and migrated states stay valid', () => {
   const s = defaultState();
-  assert.equal(s.version, 3);
+  assert.equal(s.version, 4);
   assert.ok(s.cash > 0);
   assert.equal(s.reputation, REPUTATION_START);
   assert.ok(s.reputation >= 0 && s.reputation <= REPUTATION_MAX);
@@ -73,9 +85,11 @@ test('defaultState is complete and migrated states stay valid', () => {
   delete legacy.version;
   delete legacy.sellPrices;
   delete legacy.reputation;
-  const migrated = defaultState();
-  assert.equal(migrated.version, 3);
+  const migrated = migrate(legacy);
+  assert.equal(migrated.version, 4);
   assert.ok(Number.isFinite(migrated.reputation));
+  assert.ok(Array.isArray(migrated.fixtures));
+  assert.ok(migrated.businesses.offers.bakery);
 });
 
 test('daily objective is achievable and yields a bonus', () => {
@@ -129,10 +143,18 @@ test('Blender GLB exports are present and non-empty', () => {
   const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
   const models = join(root, 'public', 'models');
   const expected = [
-    'store_shell.glb', 'display_stand.glb', 'checkout_counter.glb',
-    'player.glb', 'cashier.glb', 'customer_1.glb', 'customer_2.glb',
-    'customer_3.glb', 'car.glb', 'street_kit.glb', 'house.glb',
-    ...Object.keys(PRODUCTS).map(pid => `product_${pid}.glb`)
+    'store_shell.glb',
+    'display_stand.glb',
+    'checkout_counter.glb',
+    'player.glb',
+    'cashier.glb',
+    'customer_1.glb',
+    'customer_2.glb',
+    'customer_3.glb',
+    'car.glb',
+    'street_kit.glb',
+    'house.glb',
+    ...Object.keys(PRODUCTS).map((pid) => `product_${pid}.glb`)
   ];
   for (const file of expected) {
     const p = join(models, file);

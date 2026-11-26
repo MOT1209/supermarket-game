@@ -10,11 +10,13 @@ export default class SummaryUI {
     const el = this.ui.el;
     el.sumDay.textContent = '— Day ' + data.day;
     const obj = data.objective;
-    const objHtml = obj ? `
+    const objHtml = obj
+      ? `
       <div class="stat" style="border-color:${obj.met ? '#6fe089' : '#8896a3'}">
         <span>🎯 ${obj.text}</span>
         <b style="color:${obj.met ? '#8ff0a4' : '#ff7b6b'}">${obj.met ? '✔ Done' : `${obj.progress} / ${obj.target}`}</b>
-      </div>` : '';
+      </div>`
+      : '';
     const bonusHtml = data.bonus
       ? `<div class="stat"><span>🎁 Objective Bonus</span><b class="money">${money(data.bonus)}</b></div>`
       : '';
@@ -22,7 +24,7 @@ export default class SummaryUI {
       ? `<div class="stat"><span>🏠 Rent & Utilities</span><b class="money">-${money(data.upkeep)}</b></div>`
       : '';
     const achievementsHtml = data.achievements?.length
-      ? `<div class="stat" style="border-color:#f5c518"><span>🏆 New achievements</span><b>${data.achievements.map(a => `${a.icon} ${a.name}`).join(' · ')}</b></div>`
+      ? `<div class="stat" style="border-color:#f5c518"><span>🏆 New achievements</span><b>${data.achievements.map((a) => `${a.icon} ${a.name}`).join(' · ')}</b></div>`
       : '';
 
     el.summaryBody.innerHTML = `

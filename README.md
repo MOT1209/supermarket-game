@@ -11,28 +11,33 @@ npm run dev
 
 Open the URL printed by Vite (default `http://localhost:5173`).
 
-Production build and tests:
+Production build and checks:
 
 ```bash
-npm run build
-npm run preview
-npm test          # zero-dependency smoke tests (node --test)
+npm run build          # production bundle
+npm run preview        # serve dist locally
+npm test               # unit tests (node --test)
+npm run lint           # ESLint
+npm run format:check   # Prettier
+npm run test:e2e       # Playwright (run npx playwright install chromium once)
 ```
+
+`.github/workflows/ci.yml` runs lint, formatting, unit tests, production build and E2E tests on pushes and pull requests.
 
 ## Controls
 
-| Input | Action |
-| --- | --- |
-| WASD / Arrows | Move |
-| Shift | Sprint |
-| Mouse | Look around |
-| E | Interact (pick up box, stock shelf, checkout, terminal, dumpster) |
-| Q | Drop the box you are carrying |
-| L | Retry mouse lock after a denied/expired Pointer Lock request |
-| Esc | Pause / settings |
-| Touch joystick | Move (mobile/tablet) |
-| Drag on screen | Look around (mobile/tablet) |
-| Touch buttons | Interact / Drop / Sprint (mobile/tablet) |
+| Input          | Action                                                            |
+| -------------- | ----------------------------------------------------------------- |
+| WASD / Arrows  | Move                                                              |
+| Shift          | Sprint                                                            |
+| Mouse          | Look around                                                       |
+| E              | Interact (pick up box, stock shelf, checkout, terminal, dumpster) |
+| Q              | Drop the box you are carrying                                     |
+| L              | Retry mouse lock after a denied/expired Pointer Lock request      |
+| Esc            | Pause / settings                                                  |
+| Touch joystick | Move (mobile/tablet)                                              |
+| Drag on screen | Look around (mobile/tablet)                                       |
+| Touch buttons  | Interact / Drop / Sprint (mobile/tablet)                          |
 
 Movement is relative to the camera yaw (W always goes where you look). Keys are
 cleared on focus loss, and the game pauses when the window loses focus or the
@@ -68,9 +73,11 @@ on-screen controls automatically.
 - **Customer preferences & patience** — each shopper has a favourite aisle (buying from it makes them happier) and a limited patience in the checkout queue before they leave angry.
 - **Operating costs** — rent ($80/day) plus utilities per refrigerator ($6/day) are deducted at closing.
 - **Dynamic pricing** — wholesale prices move daily; your shelf price is independent and clamped between cost and 4× the default markup.
+- **Checkout math** — the displayed bill, required change and card validation all come from `checkoutMath.js`, so what the UI says and what the game accepts cannot drift apart.
 - **Settings** — pause menu offers mouse sensitivity, master **volume** and **graphics** (low/medium/high: shadows + pixel ratio).
+- **WebGL safety** — a small probe runs before Three.js creates a renderer. Unsupported browsers get a readable error overlay instead of a blank canvas; `webglcontextlost` pauses the game, and `webglcontextrestored` hides the overlay and resumes cleanly.
 
-Progress auto-saves to `localStorage` (save schema v3, older saves migrate automatically and corrupt values fall back to safe defaults). Gameplay saves are debounced into a single write and flushed on page hide; manual saves and day transitions write immediately. Use the pause menu to save manually or reset progress.
+Progress auto-saves to `localStorage` (save schema v4, older saves migrate automatically and corrupt values fall back to safe defaults). Schema v4 adds validated `fixtures` and `businesses` data and expands the shelf layout to 36 physical spots across seven store levels; the build/furniture catalog and neighbour data are the foundation for future placement and neighbour features. Gameplay saves are debounced into a single write and flushed on page hide; manual saves and day transitions write immediately. Use the pause menu to save manually or reset progress.
 
 ## 3D assets (Blender → GLB)
 
@@ -80,16 +87,16 @@ Progress auto-saves to `localStorage` (save schema v3, older saves migrate autom
 
 ```text
 src/
-  main.js                 bootstrap
+  main.js                 bootstrap + WebGL guard wiring
   style.css               HUD + overlays
-  core/                   Game loop, input, audio, save system
+  core/                   Game loop, input, audio, save system, WebGL guard
   world/                  Store world, lighting, shelf factory (shared asset cache)
   entities/               Player, customer AI/model, staff
-  systems/                Interaction, delivery, checkout, economy,
+  systems/                Interaction, delivery, checkout + checkout math, economy,
                           pricing, reputation, objectives, analytics,
                           achievements
   ui/                     HUD/terminal/pause/checkout/summary UI
-  data/                   Products, licenses, layout constants, tuning
+  data/                   Products, licenses, layout constants, build catalog, businesses, tuning
   utils/                  Math, canvas textures, mesh helpers, GLB loader
 public/
   models/                 23 Blender-exported GLB models (store, props, people, products)
@@ -98,6 +105,12 @@ tests/
   controls.test.js        yaw-relative movement, key normalization, sprint, lock errors
   save.test.js            save migration/validation + debounced write scheduling
   progression.test.js     analytics aggregation + one-time achievement unlocks
+  checkout.test.js        bill choice, rounded change, card amount validation
+  webgl.test.js           WebGL probe, unavailable/lost/restored states
+e2e/
+  game.spec.js            Playwright boot, terminal tabs, ordering, day close
+.github/
+  workflows/ci.yml        lint, format, unit, build and E2E checks
 ```
 
-`npm test` runs all `tests/**/*.test.js` with zero dependencies (`node --test`).
+`npm test` runs all 37 unit tests with zero test dependencies (`node --test`). `npm run test:e2e` runs four Playwright journeys against a production build.

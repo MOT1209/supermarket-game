@@ -1,121 +1,150 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" href="data:,">
-<title>FRESH MART v2.0 — 3D Supermarket Simulator</title>
-</head>
-<body>
-<div id="app"></div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:," />
+    <title>FRESH MART v2.0 — 3D Supermarket Simulator</title>
+  </head>
+  <body>
+    <div id="app"></div>
 
-<div id="hud">
-  <div id="crosshair"></div>
-  <div id="prompt"></div>
-  <div id="topbar">
-    <div class="panel" id="clockBox">Day 1 &nbsp;|&nbsp; <b id="timeText">8:00 AM</b></div>
-    <div class="row">
-      <div class="panel" id="repBox" title="Store reputation">⭐ <b id="repText">3.0</b></div>
-      <div class="panel">Cash: <b class="money" id="cashText">$0.00</b></div>
-      <button class="btn alt" id="closeBtn">Close Store</button>
+    <div id="hud">
+      <div id="crosshair"></div>
+      <div id="prompt"></div>
+      <div id="topbar">
+        <div class="panel" id="clockBox">Day 1 &nbsp;|&nbsp; <b id="timeText">8:00 AM</b></div>
+        <div class="row">
+          <div class="panel" id="repBox" title="Store reputation">⭐ <b id="repText">3.0</b></div>
+          <div class="panel">Cash: <b class="money" id="cashText">$0.00</b></div>
+          <button class="btn alt" id="closeBtn">Close Store</button>
+        </div>
+      </div>
+      <div id="carry"></div>
+      <div id="msg"></div>
+      <div id="mobileControls" aria-label="Touch controls">
+        <div id="joystickZone" aria-label="Movement joystick">
+          <div id="joystickBase"><div id="joystickKnob"></div></div>
+          <span class="joy-label">MOVE</span>
+        </div>
+        <div id="touchActions">
+          <button class="btn touch-btn" id="touchInteract" type="button">E<span>Use</span></button>
+          <button class="btn touch-btn" id="touchDrop" type="button">Q<span>Drop</span></button>
+          <button class="btn alt touch-btn" id="touchSprint" type="button">
+            ⇧<span>Sprint</span>
+          </button>
+        </div>
+      </div>
+      <div id="hint">
+        WASD move · Shift sprint · Mouse look · E interact · Q drop box · Esc pause<br />Terminal:
+        plan your store · Deliveries arrive out front
+      </div>
     </div>
-  </div>
-  <div id="carry"></div>
-  <div id="msg"></div>
-  <div id="mobileControls" aria-label="Touch controls">
-    <div id="joystickZone" aria-label="Movement joystick">
-      <div id="joystickBase"><div id="joystickKnob"></div></div>
-      <span class="joy-label">MOVE</span>
+
+    <div class="lock-bar" id="lockBar" role="status" aria-live="polite">
+      <span id="lockMsg">Mouse not captured. Click below to retry mouse look.</span>
+      <button class="btn" id="lockRetry" type="button">Retry mouse look</button>
     </div>
-    <div id="touchActions">
-      <button class="btn touch-btn" id="touchInteract" type="button">E<span>Use</span></button>
-      <button class="btn touch-btn" id="touchDrop" type="button">Q<span>Drop</span></button>
-      <button class="btn alt touch-btn" id="touchSprint" type="button">⇧<span>Sprint</span></button>
+
+    <div class="overlay" id="fatalOverlay" role="alert" aria-live="assertive">
+      <div class="card">
+        <h1>⚠️ 3D Graphics Problem</h1>
+        <p id="fatalMsg"></p>
+        <div class="row" style="margin-top: 16px">
+          <button class="btn" id="fatalReload" type="button">↻ Reload page</button>
+        </div>
+      </div>
     </div>
-  </div>
-  <div id="hint">WASD move · Shift sprint · Mouse look · E interact · Q drop box · Esc pause<br>Terminal: plan your store · Deliveries arrive out front</div>
-</div>
 
-<div class="lock-bar" id="lockBar" role="status" aria-live="polite">
-  <span id="lockMsg">Mouse not captured. Click below to retry mouse look.</span>
-  <button class="btn" id="lockRetry" type="button">Retry mouse look</button>
-</div>
-
-<div class="overlay show" id="startOverlay">
-  <div class="card">
-    <h1>🛒 FRESH MART <span style="font-size:16px;color:#ffe08a">v2.0</span></h1>
-    <p>Welcome to your supermarket! Stock shelves from delivery boxes, serve customers at the register, grow your store and become the biggest market in town.</p>
-    <h2>How to play</h2>
-    <p>• <b>WASD</b> to walk, <b>Shift</b> to sprint, <b>mouse</b> to look around.<br>
-    • Press <b>E</b> to pick up a delivery box, then press <b>E</b> at a matching shelf to stock it.<br>
-    • Empty boxes become trash — carry them to the outdoor dumpster for a recycling bonus.<br>
-    • At the register press <b>E</b> to check out customers (card or exact cash change).<br>
-    • Use the <b>Store Terminal</b> to order stock, buy licenses, build furniture, hire staff and rename your store.<br>
-    • Your progress saves automatically. Press <b>Esc</b> for settings.</p>
-    <div class="row" style="margin-top:16px">
-      <button class="btn" id="startBtn">▶ Start / Continue Game</button>
-      <button class="btn red" id="newGameBtn">🗑 New Game</button>
+    <div class="overlay show" id="startOverlay">
+      <div class="card">
+        <h1>🛒 FRESH MART <span style="font-size: 16px; color: #ffe08a">v2.0</span></h1>
+        <p>
+          Welcome to your supermarket! Stock shelves from delivery boxes, serve customers at the
+          register, grow your store and become the biggest market in town.
+        </p>
+        <h2>How to play</h2>
+        <p>
+          • <b>WASD</b> to walk, <b>Shift</b> to sprint, <b>mouse</b> to look around.<br />
+          • Press <b>E</b> to pick up a delivery box, then press <b>E</b> at a matching shelf to
+          stock it.<br />
+          • Empty boxes become trash — carry them to the outdoor dumpster for a recycling bonus.<br />
+          • At the register press <b>E</b> to check out customers (card or exact cash change).<br />
+          • Use the <b>Store Terminal</b> to order stock, buy licenses, build furniture, hire staff
+          and rename your store.<br />
+          • Your progress saves automatically. Press <b>Esc</b> for settings.
+        </p>
+        <div class="row" style="margin-top: 16px">
+          <button class="btn" id="startBtn">▶ Start / Continue Game</button>
+          <button class="btn red" id="newGameBtn">🗑 New Game</button>
+        </div>
+      </div>
     </div>
-  </div>
-</div>
 
-<div class="overlay" id="pauseOverlay">
-  <div class="card" style="width:min(480px,94vw)">
-    <h1>⏸ Paused</h1>
-    <h2>Settings</h2>
-    <label>Mouse Sensitivity: <span id="sensVal">0.00080</span></label>
-    <input type="range" id="sensSlider" min="20" max="200" value="80">
-    <label>Volume: <span id="volVal">80%</span></label>
-    <input type="range" id="volSlider" min="0" max="100" value="80">
-    <label>Graphics</label>
-    <select id="gfxSelect">
-      <option value="low">Low (no shadows)</option>
-      <option value="medium">Medium</option>
-      <option value="high">High</option>
-    </select>
-    <p class="small">Lower = slower, more precise camera. Default 0.0008.</p>
-    <div class="row" style="margin-top:14px">
-      <button class="btn" id="resumeBtn">▶ Resume</button>
-      <button class="btn alt" id="saveBtn">💾 Save Game</button>
-      <button class="btn red" id="resetBtn">Reset Save</button>
+    <div class="overlay" id="pauseOverlay">
+      <div class="card" style="width: min(480px, 94vw)">
+        <h1>⏸ Paused</h1>
+        <h2>Settings</h2>
+        <label>Mouse Sensitivity: <span id="sensVal">0.00080</span></label>
+        <input type="range" id="sensSlider" min="20" max="200" value="80" />
+        <label>Volume: <span id="volVal">80%</span></label>
+        <input type="range" id="volSlider" min="0" max="100" value="80" />
+        <label>Graphics</label>
+        <select id="gfxSelect">
+          <option value="low">Low (no shadows)</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+        </select>
+        <p class="small">Lower = slower, more precise camera. Default 0.0008.</p>
+        <div class="row" style="margin-top: 14px">
+          <button class="btn" id="resumeBtn">▶ Resume</button>
+          <button class="btn alt" id="saveBtn">💾 Save Game</button>
+          <button class="btn red" id="resetBtn">Reset Save</button>
+        </div>
+      </div>
     </div>
-  </div>
-</div>
 
-<div class="overlay" id="terminalOverlay">
-  <div class="card">
-    <h1>🖥 Store Terminal <span id="termCash" class="money" style="float:right;font-size:20px"></span></h1>
-    <div class="tabs">
-      <div class="tab active" data-tab="stock">📦 Order Stock</div>
-      <div class="tab" data-tab="pricing">💲 Pricing</div>
-      <div class="tab" data-tab="licenses">📜 Licenses</div>
-      <div class="tab" data-tab="build">🔨 Build / Furniture</div>
-      <div class="tab" data-tab="staff">👥 Staff</div>
-      <div class="tab" data-tab="custom">🎨 Customize</div>
-      <div class="tab" data-tab="analytics">📊 Analytics</div>
-      <div class="tab" data-tab="achievements">🏆 Achievements</div>
+    <div class="overlay" id="terminalOverlay">
+      <div class="card">
+        <h1>
+          🖥 Store Terminal
+          <span id="termCash" class="money" style="float: right; font-size: 20px"></span>
+        </h1>
+        <div class="tabs">
+          <div class="tab active" data-tab="stock">📦 Order Stock</div>
+          <div class="tab" data-tab="pricing">💲 Pricing</div>
+          <div class="tab" data-tab="licenses">📜 Licenses</div>
+          <div class="tab" data-tab="build">🔨 Build / Furniture</div>
+          <div class="tab" data-tab="staff">👥 Staff</div>
+          <div class="tab" data-tab="custom">🎨 Customize</div>
+          <div class="tab" data-tab="analytics">📊 Analytics</div>
+          <div class="tab" data-tab="achievements">🏆 Achievements</div>
+        </div>
+        <div id="tabContent"></div>
+        <div class="row" style="margin-top: 18px">
+          <button class="btn gray" id="termClose">Close (Esc)</button>
+        </div>
+      </div>
     </div>
-    <div id="tabContent"></div>
-    <div class="row" style="margin-top:18px"><button class="btn gray" id="termClose">Close (Esc)</button></div>
-  </div>
-</div>
 
-<div class="overlay" id="checkoutOverlay">
-  <div class="card" style="width:min(520px,94vw)">
-    <h1>🧾 Checkout</h1>
-    <div id="checkoutBody"></div>
-  </div>
-</div>
+    <div class="overlay" id="checkoutOverlay">
+      <div class="card" style="width: min(520px, 94vw)">
+        <h1>🧾 Checkout</h1>
+        <div id="checkoutBody"></div>
+      </div>
+    </div>
 
-<div class="overlay" id="summaryOverlay">
-  <div class="card" style="width:min(560px,94vw)">
-    <h1>🌙 End of Day <span id="sumDay" style="color:#ffe08a"></span></h1>
-    <div id="summaryBody"></div>
-    <div class="row" style="margin-top:18px"><button class="btn" id="nextDayBtn">☀ Start Next Day</button></div>
-  </div>
-</div>
+    <div class="overlay" id="summaryOverlay">
+      <div class="card" style="width: min(560px, 94vw)">
+        <h1>🌙 End of Day <span id="sumDay" style="color: #ffe08a"></span></h1>
+        <div id="summaryBody"></div>
+        <div class="row" style="margin-top: 18px">
+          <button class="btn" id="nextDayBtn">☀ Start Next Day</button>
+        </div>
+      </div>
+    </div>
 
-<div id="loading">Loading FRESH MART v2.0…</div>
-<script type="module" src="/src/main.js"></script>
-</body>
+    <div id="loading">Loading FRESH MART v2.0…</div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
 </html>

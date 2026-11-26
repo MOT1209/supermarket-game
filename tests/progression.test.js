@@ -14,11 +14,7 @@ test('default state contains empty progression collections', () => {
 test('migrate keeps valid progression data and drops invalid entries', () => {
   const s = defaultState();
   s.achievements = ['first_day', 'not_a_real_achievement', 'first_day'];
-  s.history = [
-    { day: 1, revenue: 100, net: 40, happy: 6, angry: 0 },
-    { day: 'oops' },
-    null
-  ];
+  s.history = [{ day: 1, revenue: 100, net: 40, happy: 6, angry: 0 }, { day: 'oops' }, null];
   const m = migrate(s);
   assert.deepEqual(m.achievements, ['first_day']);
   assert.equal(m.history.length, 1);
@@ -60,7 +56,7 @@ test('achievements unlock once and only return newly earned ones', () => {
   s.history = [{ day: 1, happy: 30, angry: 0, recycle: 12, revenue: 100 }];
   const stats = { happy: 25, angry: 0, recycle: 2, revenue: 50 };
   const first = checkAchievements(s, stats);
-  const ids = first.map(a => a.id);
+  const ids = first.map((a) => a.id);
   assert.ok(ids.includes('cash_1000'));
   assert.ok(ids.includes('stars_5'));
   assert.ok(ids.includes('happy_50'));
@@ -73,9 +69,13 @@ test('achievements unlock once and only return newly earned ones', () => {
 
 test('perfect-day achievement requires happy customers and zero angry', () => {
   const s = defaultState();
-  assert.ok(!checkAchievements(s, null, { happy: 6, angry: 1 }).some(a => a.id === 'perfect_day'));
-  assert.ok(!checkAchievements(s, null, { happy: 2, angry: 0 }).some(a => a.id === 'perfect_day'));
+  assert.ok(
+    !checkAchievements(s, null, { happy: 6, angry: 1 }).some((a) => a.id === 'perfect_day')
+  );
+  assert.ok(
+    !checkAchievements(s, null, { happy: 2, angry: 0 }).some((a) => a.id === 'perfect_day')
+  );
   const earned = checkAchievements(s, null, { happy: 6, angry: 0 });
-  assert.ok(earned.some(a => a.id === 'perfect_day'));
-  assert.ok(ACHIEVEMENTS.some(a => a.id === 'perfect_day'));
+  assert.ok(earned.some((a) => a.id === 'perfect_day'));
+  assert.ok(ACHIEVEMENTS.some((a) => a.id === 'perfect_day'));
 });

@@ -10,7 +10,11 @@ export default class AudioManager {
     if (!this.ctx) {
       const Ctx = window.AudioContext || window.webkitAudioContext;
       if (!Ctx) return;
-      try { this.ctx = new Ctx(); } catch (e) { return; }
+      try {
+        this.ctx = new Ctx();
+      } catch {
+        return;
+      }
       this.master = this.ctx.createGain();
       this.master.gain.value = this.volume;
       this.master.connect(this.ctx.destination);
@@ -33,22 +37,49 @@ export default class AudioManager {
     gain.gain.setValueAtTime(0, t);
     gain.gain.linearRampToValueAtTime(vol, t + 0.01);
     gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    osc.connect(gain); gain.connect(this.master);
-    osc.start(t); osc.stop(t + dur + 0.02);
+    osc.connect(gain);
+    gain.connect(this.master);
+    osc.start(t);
+    osc.stop(t + dur + 0.02);
   }
 
   play(name) {
     switch (name) {
-      case 'beep':    this.tone(880, 0.08, 'square', 0.06); break;
-      case 'scan':    this.tone(1200, 0.05, 'sine', 0.08); break;
-      case 'success': this.tone(660, 0.10); this.tone(880, 0.12, 'sine', 0.1, 0.09); this.tone(1100, 0.16, 'sine', 0.1, 0.18); break;
-      case 'error':   this.tone(180, 0.25, 'sawtooth', 0.12); this.tone(130, 0.30, 'sawtooth', 0.1, 0.10); break;
-      case 'pick':    this.tone(320, 0.07, 'triangle', 0.09); break;
-      case 'place':   this.tone(240, 0.09, 'triangle', 0.09); break;
-      case 'coin':    this.tone(1500, 0.05, 'square', 0.05); this.tone(2000, 0.05, 'square', 0.04, 0.05); break;
-      case 'cash':    this.tone(520, 0.06, 'square', 0.06); this.tone(780, 0.08, 'square', 0.05, 0.06); break;
-      case 'delivery':this.tone(300, 0.15, 'sine', 0.1); this.tone(400, 0.20, 'sine', 0.1, 0.14); break;
-      default: break;
+      case 'beep':
+        this.tone(880, 0.08, 'square', 0.06);
+        break;
+      case 'scan':
+        this.tone(1200, 0.05, 'sine', 0.08);
+        break;
+      case 'success':
+        this.tone(660, 0.1);
+        this.tone(880, 0.12, 'sine', 0.1, 0.09);
+        this.tone(1100, 0.16, 'sine', 0.1, 0.18);
+        break;
+      case 'error':
+        this.tone(180, 0.25, 'sawtooth', 0.12);
+        this.tone(130, 0.3, 'sawtooth', 0.1, 0.1);
+        break;
+      case 'pick':
+        this.tone(320, 0.07, 'triangle', 0.09);
+        break;
+      case 'place':
+        this.tone(240, 0.09, 'triangle', 0.09);
+        break;
+      case 'coin':
+        this.tone(1500, 0.05, 'square', 0.05);
+        this.tone(2000, 0.05, 'square', 0.04, 0.05);
+        break;
+      case 'cash':
+        this.tone(520, 0.06, 'square', 0.06);
+        this.tone(780, 0.08, 'square', 0.05, 0.06);
+        break;
+      case 'delivery':
+        this.tone(300, 0.15, 'sine', 0.1);
+        this.tone(400, 0.2, 'sine', 0.1, 0.14);
+        break;
+      default:
+        break;
     }
   }
 }

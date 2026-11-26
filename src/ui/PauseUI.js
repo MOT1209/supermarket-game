@@ -3,14 +3,14 @@ export default class PauseUI {
     this.game = game;
     this.ui = ui;
     const slider = document.getElementById('sensSlider');
-    slider.oninput = e => {
+    slider.oninput = (e) => {
       this.game.state.sensitivity = parseInt(e.target.value, 10) / 100000;
       this.ui.el.sensVal.textContent = this.game.state.sensitivity.toFixed(5);
       this.game.save();
     };
 
     const vol = document.getElementById('volSlider');
-    vol.oninput = e => {
+    vol.oninput = (e) => {
       const v = parseInt(e.target.value, 10) / 100;
       this.game.state.volume = v;
       this.game.audio.setVolume(v);
@@ -19,7 +19,7 @@ export default class PauseUI {
     };
 
     const gfx = document.getElementById('gfxSelect');
-    gfx.onchange = e => {
+    gfx.onchange = (e) => {
       this.game.state.graphics = e.target.value;
       this.game.applyGraphics();
       this.game.save();

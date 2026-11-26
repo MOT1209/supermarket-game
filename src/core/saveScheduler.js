@@ -24,5 +24,12 @@ export function createDebouncedSave(write, delay = 250) {
     timer = setTimeout(flush, delay);
   }
 
-  return { schedule, flush, cancel, get pending() { return pending; } };
+  return {
+    schedule,
+    flush,
+    cancel,
+    get pending() {
+      return pending;
+    }
+  };
 }

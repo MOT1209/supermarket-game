@@ -17,12 +17,13 @@ export function dayRecord(state, stats, extra = {}) {
   };
 }
 
-export function buildAnalytics(state, stats = null) {
+export function buildAnalytics(state, stats = null, extra = {}) {
   const history = Array.isArray(state.history) ? state.history : [];
-  const rows = stats ? [...history, dayRecord(state, stats)] : [...history];
+  const rows = stats ? [...history, dayRecord(state, stats, extra)] : [...history];
 
-  const completed = history.filter(r => Number.isFinite(r?.net));
-  const best = rows.filter(r => Number.isFinite(r?.net))
+  const completed = history.filter((r) => Number.isFinite(r?.net));
+  const best = rows
+    .filter((r) => Number.isFinite(r?.net))
     .reduce((top, r) => (!top || r.net > top.net ? r : top), null);
 
   return {
