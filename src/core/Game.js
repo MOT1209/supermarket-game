@@ -4,6 +4,7 @@ import {
 } from '../data/products.js';
 import { clamp, rounded } from '../utils/math.js';
 import { loadGame, saveGame, defaultState, deleteSave } from './SaveSystem.js';
+import { createDebouncedSave } from './saveScheduler.js';
 import AudioManager from './Audio.js';
 import Input from './Input.js';
 import Lighting from '../world/Lighting.js';
@@ -19,6 +20,8 @@ import { spawnDelivery } from '../systems/DeliverySystem.js';
 import { fluctuatePrices, wages, operatingCost } from '../systems/EconomySystem.js';
 import { spawnRate } from '../systems/Reputation.js';
 import { evaluateObjective } from '../systems/Objectives.js';
+import { dayRecord } from '../systems/Analytics.js';
+import { checkAchievements } from '../systems/Achievements.js';
 
 export default class Game {
   constructor() {
@@ -59,10 +62,19 @@ export default class Game {
     this.checkout = new CheckoutSystem(this);
     this.applyGraphics();
 
+    // Frequent gameplay saves are coalesced into one localStorage write.
+    this.saveScheduler = createDebouncedSave(() => this.writeSave(), 400);
+
     addEventListener('resize', () => {
       this.camera.aspect = innerWidth / innerHeight;
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(innerWidth, innerHeight);
+    });
+
+    // A hidden/closing page may not run pending timers, so persist now.
+    addEventListener('pagehide', () => this.saveScheduler.flush());
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) this.saveScheduler.flush();
     });
   }
 
@@ -79,6 +91,14 @@ export default class Game {
     this.input.clearKeys();
     this.lastTime = performance.now();
     if (this.input.wantsPointerLock) this.input.requestLock();
+    if (this.pendingAchievements?.length) {
+      this.announceAchievements(this.pendingAchievements);
+      this.pendingAchievements = [];
+    }
+  }
+
+  announceAchievements(earned) {
+    for (const a of earned) this.ui.toast(`${a.icon} Achievement unlocked: ${a.name}`);
   }
 
   pauseGame() {
@@ -128,12 +148,18 @@ export default class Game {
     document.getElementById('loading').style.display = 'none';
     this.ui.updateHUD();
     this.ui.syncMode(this.mode);
+    // Old saves may already satisfy milestones that had no system yet.
+    this.pendingAchievements = checkAchievements(this.state);
+    if (this.pendingAchievements.length) this.save(false, true);
     this.camera.position.copy(this.player.pos);
     requestAnimationFrame(t => this.animate(t));
   }
 
   animate(now) {
     requestAnimationFrame(t => this.animate(t));
+    // Don't burn CPU/GPU on a tab the player can't see; also avoids a large
+    // dt spike when the tab becomes visible again.
+    if (document.hidden) { this.lastTime = now; return; }
     const dt = Math.min(0.05, (now - this.lastTime) / 1000);
     this.lastTime = now;
 
@@ -157,6 +183,7 @@ export default class Game {
       : '');
     if (this.mode === 'playing' && now - this.lastAutosave > 20000) {
       this.lastAutosave = now;
+      this.announceAchievements(checkAchievements(this.state, this.runtime.stats));
       this.save(false);
     }
     this.renderer.render(this.scene, this.camera);
@@ -214,11 +241,26 @@ export default class Game {
     });
   }
 
-  save(showToast = false) {
-    if (saveGame(this.state) && showToast) this.ui.toast('💾 Game saved');
+  writeSave() {
+    this.syncShelfData();
+    return saveGame(this.state);
+  }
+
+  // Regular gameplay saves are debounced; manual saves and critical state
+  // transitions (closing/day change) write immediately.
+  save(showToast = false, critical = false) {
+    if (critical || showToast) {
+      this.saveScheduler.cancel();
+      if (this.writeSave() && showToast) this.ui.toast('💾 Game saved');
+      return true;
+    }
+    this.saveScheduler.schedule();
+    return false;
   }
 
   newGame() {
+    // Prevent the pagehide flush from re-creating the save we just deleted.
+    this.saveScheduler?.cancel();
     deleteSave();
     location.reload();
   }
@@ -233,6 +275,11 @@ export default class Game {
     const { obj, progress, met, bonus } = evaluateObjective(this);
     this.state.cash = rounded(this.state.cash - wage - upkeep + bonus);
     const net = rounded(st.revenue + st.recycle + bonus - st.stockCost - wage - upkeep);
+    const record = dayRecord(this.state, st, { net });
+    if (!Array.isArray(this.state.history)) this.state.history = [];
+    this.state.history.push(record);
+    if (this.state.history.length > 60) this.state.history.splice(0, this.state.history.length - 60);
+    const earned = checkAchievements(this.state, null, record);
     if (this.state.cash < WAGE_RESTOCKER) this.state.staff.restocker = false;
     if (this.state.cash < WAGE_CASHIER) this.state.staff.cashier = false;
     this.ui.summary.render({
@@ -247,9 +294,11 @@ export default class Game {
       net,
       happy: st.happy,
       angry: st.angry,
-      cash: this.state.cash
+      cash: this.state.cash,
+      achievements: earned
     });
-    this.save(false);
+    this.save(false, true);
+    this.announceAchievements(earned);
   }
 
   nextDay() {
@@ -263,7 +312,7 @@ export default class Game {
     this.startPlaying();
     spawnDelivery(this);
     this.ui.updateHUD();
-    this.save(false);
+    this.save(false, true);
     this.ui.toast(`Day ${this.state.day} begins — new prices & delivery!`);
   }
 }

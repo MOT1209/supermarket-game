@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>تقرير مراجعة مشروع FRESH MART v2.0</title>
+<style>
+  :root {
+    --bg: #0f1513;
+    --panel: #18211e;
+    --panel2: #1e2a26;
+    --line: #2c3b35;
+    --text: #e8f1ec;
+    --muted: #9fb2a8;
+    --green: #34d17f;
+    --green2: #7ef0ac;
+    --amber: #f4c667;
+    --blue: #6fb7ff;
+    --red: #ff7b7b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: linear-gradient(160deg, #0b100e 0%, var(--bg) 45%, #121c18 100%);
+    color: var(--text);
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+    line-height: 1.8;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 32px 20px 80px; }
+  header {
+    background: linear-gradient(120deg, #143d2b, #1b5b3c 55%, #123a2a);
+    border: 1px solid #2f7a52;
+    border-radius: 20px;
+    padding: 32px;
+    box-shadow: 0 18px 50px rgba(0,0,0,.35);
+  }
+  h1 { margin: 0 0 8px; font-size: 30px; letter-spacing: -.5px; }
+  header p { margin: 4px 0; color: #d3f0df; }
+  .meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+  .meta span {
+    background: rgba(255,255,255,.09); border: 1px solid rgba(255,255,255,.16);
+    border-radius: 999px; padding: 5px 14px; font-size: 13px;
+  }
+  a { color: var(--green2); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  section { margin-top: 34px; }
+  h2 {
+    font-size: 22px; margin: 0 0 16px; padding-inline-start: 14px;
+    border-inline-start: 4px solid var(--green);
+  }
+  h3 { font-size: 16px; color: var(--green2); margin: 22px 0 10px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px;
+  }
+  .card .k { color: var(--muted); font-size: 13px; }
+  .card .v { font-size: 20px; font-weight: 700; margin-top: 4px; }
+  .good { color: var(--green); } .warn { color: var(--amber); } .info { color: var(--blue); }
+  table { width: 100%; border-collapse: collapse; background: var(--panel); border-radius: 14px; overflow: hidden; }
+  th, td { padding: 12px 14px; text-align: right; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: var(--panel2); color: var(--green2); font-size: 14px; }
+  tr:last-child td { border-bottom: none; }
+  td.small, .small { font-size: 13px; color: var(--muted); }
+  .badge { display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 700; }
+  .b-mid { background: rgba(244,198,103,.15); color: var(--amber); border: 1px solid rgba(244,198,103,.4); }
+  .b-low { background: rgba(111,183,255,.13); color: var(--blue); border: 1px solid rgba(111,183,255,.35); }
+  .b-ok { background: rgba(52,209,127,.14); color: var(--green); border: 1px solid rgba(52,209,127,.4); }
+  .ideas { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 14px; }
+  .idea {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px;
+    display: flex; gap: 12px; align-items: flex-start;
+  }
+  .idea .n {
+    flex: 0 0 34px; height: 34px; border-radius: 10px; display: grid; place-items: center;
+    background: rgba(52,209,127,.15); color: var(--green2); font-weight: 800;
+  }
+  .idea b { display: block; margin-bottom: 3px; }
+  .idea p { margin: 0; color: var(--muted); font-size: 13px; }
+  .tag { font-size: 11px; color: var(--blue); border: 1px solid rgba(111,183,255,.3); border-radius: 6px; padding: 0 6px; margin-inline-start: 6px; }
+  ul { margin: 8px 0 0; padding-inline-start: 22px; }
+  li { margin: 5px 0; }
+  footer {
+    margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line);
+    color: var(--muted); font-size: 13px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  }
+  @media print { body { background: #fff; color: #111; } header, .card, .idea, table { break-inside: avoid; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>تقرير مراجعة سريع — FRESH MART v2.0</h1>
+  <p>مراجعة حالة المشروع بعد إصلاح نظام التحكم، مع توصيات تحسين و20 فكرة لتطوير اللعبة.</p>
+  <div class="meta">
+    <span>📅 25 نوفمبر 2026</span>
+    <span>🌿 Three.js + Vite</span>
+    <span>🔀 PR #4 (مفتوح، قابل للدمج)</span>
+    <span>📦 commit 9eb03eb</span>
+    <span>🧪 16/16 اختبار</span>
+  </div>
+</header>
+
+<section>
+  <h2>ملخص الحالة</h2>
+  <div class="cards">
+    <div class="card"><div class="k">البنية</div><div class="v good">واضحة ومنظّمة</div><div class="small">core / world / entities / systems / ui</div></div>
+    <div class="card"><div class="k">الاختبارات</div><div class="v good">16 ناجح / 0 فاشل</div><div class="small">اختبارات دخان + 6 اختبارات تحكم</div></div>
+    <div class="card"><div class="k">البناء الإنتاجي</div><div class="v good">ناجح</div><div class="small">تحذير حجم الحزمة فقط (618 kB)</div></div>
+    <div class="card"><div class="k">التحكم</div><div class="v good">مُصلَح بالكامل</div><div class="small">سطح المكتب + اللمس + Pointer Lock</div></div>
+    <div class="card"><div class="k">طلب الدمج</div><div class="v warn">بانتظار صلاحية الدمج</div><div class="small">حساب MOT1209 يملك قراءة فقط</div></div>
+    <div class="card"><div class="k">جاهزية النشر</div><div class="v info">جيدة مع ملاحظات</div><div class="small">انظر جدول التوصيات أدناه</div></div>
+  </div>
+</section>
+
+<section>
+  <h2>مراجعة سريعة — الملاحظات والتوصيات</h2>
+  <table>
+    <thead>
+      <tr><th style="width:110px">الأولوية</th><th style="width:180px">الجزء</th><th>الملاحظة</th><th>التوصية</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="badge b-mid">متوسط</span></td>
+        <td>src/core/Input.js</td>
+        <td>الثابت <code>ACTION_KEYS</code> معرّف لكنه غير مستخدم.</td>
+        <td>حذفه أو استخدامه فعليًا لتوحيد معالجة مفاتيح E/Q/L.</td>
+      </tr>
+      <tr>
+        <td><span class="badge b-mid">متوسط</span></td>
+        <td>SaveSystem.js</td>
+        <td><code>migrate()</code> يدمج بيانات الحفظ دون التحقق من صحة الحقول الرقمية (cash, day, level, clock).</td>
+        <td>التحقق من <code>Number.isFinite</code> وتقييد القيم، ورفض الحفظ التالف بأمان.</td>
+      </tr>
+      <tr>
+        <td><span class="badge b-mid">متوسط</span></td>
+        <td>Customer.js</td>
+        <td><code>disposeGroup()</code> يتلف المواد والقوام لكل كائن، وقد تكون مشتركة مع نماذج GLB المخزّنة مؤقتًا.</td>
+        <td>تمييز المواد المشتركة وعدم إتلافها، أو استنساخ المواد لكل زبون.</td>
+      </tr>
+      <tr>
+        <td><span class="badge b-mid">متوسط</span></td>
+        <td>Game.js</td>
+        <td><code>save()</code> يُستدعى عند كل عملية شراء/تخزين/دفع، Plus حفظ تلقائي كل 20 ثانية — كتابة متزامنة متكررة على localStorage.</td>
+        <td>تجميع التغييرات في طابور حفظ (debounce) وتقليل الكتابات أثناء اللعب.</td>
+      </tr>
+      <tr>
+        <td><span class="badge b-mid">متوسط</span></td>
+        <td>Game.animate()</td>
+        <td>حلقة الرسم تعمل بكامل طاقتها حتى أثناء الإيقاف أو عندما تكون الصفحة في الخلفية.</td>
+        <td>إيقاف/إبطاء الحلقة عند <code>visibilitychange</code> وتخطي التصيير في وضع الإيقاف.</td>
+      </tr>
+      <tr>
+        <td><span class="badge b-low">تحسين</span></td>
+        <td>البناء</td>
+        <td>حزمة JavaScript واحدة بحجم 618 kB (164 kB مضغوطة) بدون تقسيم الكود.</td>
+        <td>تقسيم Three.js إلى chunk منفصل وتحميل النماذج عند الطلب.</td>
+      </tr>
+      <tr>
+        <td><span class="badge b-low">تحسين</span></td>
+        <td>الاختبارات / CI</td>
+        <td>لا يوجد lint أو تنسيق تلقائي أو CI، والاختبارات وحدة فقط دون E2E داخل المستودع.</td>
+        <td>إضافة ESLint + Prettier وGitHub Actions وتشغيل Playwright على المسارات الحرجة.</td>
+      </tr>
+      <tr>
+        <td><span class="badge b-low">تحسين</span></td>
+        <td>README.md</td>
+        <td>لا يذكر اختبارات التحكم الجديدة ولا دعم اللمس/Pointer Lock.</td>
+        <td>تحديث قسمي Controls و Tests ليطابقا الحالة الحالية.</td>
+      </tr>
+      <tr>
+        <td><span class="badge b-low">تحسين</span></td>
+        <td>التشغيل</td>
+        <td>لا يوجد بديل إذا تعذّر تهيئة WebGL ولا معالجة فقدان سياق الرسم.</td>
+        <td>شاشة خطأ واضحة وإعادة تهيئة عند <code>webglcontextlost</code>.</td>
+      </tr>
+      <tr>
+        <td><span class="badge b-ok">إيجابي</span></td>
+        <td>عمومًا</td>
+        <td>فصل الأنظمة، ترحيل الحفظ، معالجة أخطاء القفل، دعم اللمس، واختبارات فعلية كلها موجودة.</td>
+        <td>الحفاظ على هذا النمط عند إضافة أي ميزات جديدة.</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2>الصلاحيات المقترحة (ترتيب التنفيذ)</h2>
+  <ul>
+    <li><b>أولًا:</b> تنظيف كود التحكم وحذف الثابت غير المستخدم، وتحديث README.</li>
+    <li><b>ثانيًا:</b> تحسين الحفظ: تحقق من صحة البيانات + تأخير الكتابة (debounce).</li>
+    <li><b>ثالثًا:</b> مراجعة إتلاف المواد المشتركة في نماذج العملاء.</li>
+    <li><b>رابعًا:</b> إبطاء حلقة الرسم في الخلفية وتقسيم حزمة الإنتاج.</li>
+    <li><b>خامسًا:</b> إضافة lint/CI واختبارات E2E تلقائية.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>20 فكرة لتطوير المشروع</h2>
+  <div class="ideas">
+
+    <div class="idea"><div class="n">1</div><div><b>حفظ سحابي وتصدير/استيراد<span class="tag">حفظ</span></b><p>ملف حفظ قابل للتصدير والاستيراد، ومزامنة اختيارية عبر حساب.</p></div></div>
+    <div class="idea"><div class="n">2</div><div><b>طلبات أونلاين<span class="tag">لعب</span></b><p>طلبات تصل عبر هاتف المتجر؛ تجهيزها وتسليمها قبل انتهاء الوقت مقابل مكافأة.</p></div></div>
+    <div class="idea"><div class="n">3</div><div><b>ترقية الموظفين<span class="tag">اقتصاد</span></b><p>مستويات خبرة، تدريب، رواتب متدرجة وكفاءة أعلى في التخزين والدفع.</p></div></div>
+    <div class="idea"><div class="n">4</div><div><b>نظام الإنجازات<span class="tag">تقدم</span></b><p>أهداف طويلة المدى مثل «بيع 1000 منتج» أو «سمعة خمس نجوم لـ 7 أيام».</p></div></div>
+    <div class="idea"><div class="n">5</div><div><b>أخبار يومية وتقلب سوق<span class="tag">اقتصاد</span></b><p>أحداث ترفع أو تخفض الطلب على فئات معينة وتغيّر أسعار الجملة.</p></div></div>
+    <div class="idea"><div class="n">6</div><div><b>المناسبات والطقس<span class="tag">محتوى</span></b><p>مواسم وعطلات تزيد الزبائن وتسمح بمنتجات محدودة وتزيين المتجر.</p></div></div>
+    <div class="idea"><div class="n">7</div><div><b>ذكاء زبائن أعمق<span class="tag">ذكاء اصطناعي</span></b><p>تردد، نسيان مشتريات، تفضيلات شخصية، وردود فعل صوتية ووجهية.</p></div></div>
+    <div class="idea"><div class="n">8</div><div><b>السرقة والخسائر<span class="tag">لعب</span></b><p>لصوص محتملون وكاميرات مراقبة قابلة للشراء وتأثير على السمعة.</p></div></div>
+    <div class="idea"><div class="n">9</div><div><b>نظافة المتجر<span class="tag">لعب</span></b><p>أرضية تتسخ مع كثرة الزبائن؛ التنظيف يحسّن السمعة ويقلّل غضبهم.</p></div></div>
+    <div class="idea"><div class="n">10</div><div><b>ترقية المعدات<span class="tag">اقتصاد</span></b><p>ثلاجات أفضل، رفوف أكبر، وأجهزة دفع سريعة تقلّل زمن الانتظار.</p></div></div>
+    <div class="idea"><div class="n">11</div><div><b>لوحة تحليلات<span class="tag">واجهة</span></b><p>رسوم بيانية يومية للأرباح، أكثر المنتجات مبيعًا، وأوقات الذروة.</p></div></div>
+    <div class="idea"><div class="n">12</div><div><b>موسيقى وأصوات أصلية<span class="tag">صوت</span></b><p>موسيقى خلفية حسب وقت اليوم ومؤثرات مسجّلة بدل المولّدة برمجيًا.</p></div></div>
+    <div class="idea"><div class="n">13</div><div><b>دعم لغات متعددة<span class="tag">واجهة</span></b><p>عربي وإنجليزي مع دعم كامل RTL لكل النصوص والقوائم.</p></div></div>
+    <div class="idea"><div class="n">14</div><div><b>وضع التحدي الزمني<span class="tag">لعب</span></b><p>جولات محددة بوقت ولوحة صدارة محلية لأفضل ربح في اليوم.</p></div></div>
+    <div class="idea"><div class="n">15</div><div><b>تاريخ الصلاحية والتصفية<span class="tag">اقتصاد</span></b><p>منتجات تنتهي صلاحيتها؛ خصم تصفية قبل الخسارة أو إتلافها.</p></div></div>
+    <div class="idea"><div class="n">16</div><div><b>العروض والإعلانات<span class="tag">اقتصاد</span></b><p>نظام خصومات و«اشترِ 2 واحصل على 1» ولافتات ترفع الطلب مؤقتًا.</p></div></div>
+    <div class="idea"><div class="n">17</div><div><b>تحسين الأداء<span class="tag">تقني</span></b><p>تقسيم الحزمة، تحميل النماذج عند الحاجة، وإعادة استخدام المواد والهندسة.</p></div></div>
+    <div class="idea"><div class="n">18</div><div><b>اختبارات E2E وCI<span class="tag">تقني</span></b><p>Playwright يختبر الفتح، الطلب، الدفع، إغلاق اليوم، والتحكم باللمس تلقائيًا.</p></div></div>
+    <div class="idea"><div class="n">19</div><div><b>دعم يد اللعب<span class="tag">تحكم</span></b><p>Gamepad مع عصا للحركة ونظر، وإعدادات حساسية متقدمة لكل جهاز.</p></div></div>
+    <div class="idea"><div class="n">20</div><div><b>توسعة الخريطة<span class="tag">محتوى</span></b><p>أقسام جديدة (مخبز، لحوم، إلكترونيات) وطوابق إضافية ومستودع خلفي.</p></div></div>
+
+  </div>
+</section>
+
+<section>
+  <h2>الخلاصة</h2>
+  <p>المشروع في حالة صحية جيدة بعد إصلاح التحكم: البنية واضحة، والاختبارات والبناء ناجحان، وطلب الدمج #4 نظيف وقابل للدمج. العائق الوحيد حاليًا هو صلاحية الدمج على المستودع الأصلي. بعد ذلك، أعلى قيمة للعمل القادم هي تحسين الحفظ والأداء، ثم إضافة محتوى لعب يزيد عمق اليوم الواحد.</p>
+</section>
+
+<footer>
+  <span>أُنشئ كمراجعة سريعة بناءً على فحص الملفات وتشغيل الاختبارات والبناء.</span>
+  <span><a href="https://github.com/udhwv2073-cmd/supermarket-game/pull/4">رابط طلب الدمج #4</a></span>
+</footer>
+
+</div>
+</body>
+</html>
