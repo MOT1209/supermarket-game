@@ -10,6 +10,8 @@ import {
   currentSellPrice, margin, marginPct, setSellPrice, resetSellPrice
 } from '../systems/Pricing.js';
 import { evaluateObjective } from '../systems/Objectives.js';
+import { buildAnalytics } from '../systems/Analytics.js';
+import { ACHIEVEMENTS } from '../systems/Achievements.js';
 
 export default class TerminalUI {
   constructor(game, ui) {
@@ -94,6 +96,43 @@ export default class TerminalUI {
         <input type="text" id="nameInput" maxlength="14" value="${g.state.storeName.replace(/"/g, '&quot;')}">
         <button class="btn" id="renameBtn">Update Sign</button>
         <p class="small">The 3D sign above the entrance updates instantly.</p>`;
+    } else if (tab === 'analytics') {
+      const a = buildAnalytics(g.state, g.runtime.stats);
+      const maxNet = Math.max(1, ...a.last7.map(r => Math.abs(r.net || 0)));
+      const bars = a.last7.map(r => {
+        const net = Math.round(r.net || 0);
+        const pct = Math.max(3, Math.round(Math.abs(net) / maxNet * 100));
+        return `<div class="barwrap" title="Day ${r.day}: ${money(net)}">
+          <div class="barfill ${net < 0 ? 'neg' : ''}" style="width:${pct}%"></div>
+          <span class="barlabel">D${r.day}</span>
+          <span class="barvalue ${net < 0 ? 'up' : 'down'}">${money(net)}</span>
+        </div>`;
+      }).join('');
+      const happyPct = a.happy + a.angry ? Math.round(a.happy / (a.happy + a.angry) * 100) : 0;
+      h = `<h2>Store Analytics</h2><p class="small">Completed days plus today so far. Last 60 days are saved.</p>
+        <div class="grid">
+          <div class="tile"><h3>📅 Days played</h3><div class="price">${a.days}</div></div>
+          <div class="tile"><h3>💰 Total revenue</h3><div class="price">${money(a.revenue)}</div></div>
+          <div class="tile"><h3>📦 Stock costs</h3><div class="price">${money(a.stockCost)}</div></div>
+          <div class="tile"><h3>📈 Avg net / day</h3><div class="price">${money(a.avgNet)}</div></div>
+          <div class="tile"><h3>🏆 Best day</h3><div class="price">${a.bestDay ? `Day ${a.bestDay.day} · ${money(a.bestDay.net)}` : '—'}</div></div>
+          <div class="tile"><h3>♻ Boxes recycled</h3><div class="price">${a.recycled}</div></div>
+          <div class="tile"><h3>😊 Happy customers</h3><div class="price">${a.happy}</div></div>
+          <div class="tile"><h3>👍 Satisfaction</h3><div class="price">${happyPct}%</div><div class="small">${a.angry} angry customers</div></div>
+        </div>
+        <h2>Net profit — last 7 days</h2>${bars || '<p class="small">Close your first day to see a chart.</p>'}`;
+    } else if (tab === 'achievements') {
+      const owned = Array.isArray(g.state.achievements) ? g.state.achievements : [];
+      h = `<h2>Achievements <span class="small">${owned.length} / ${ACHIEVEMENTS.length} unlocked</span></h2><div class="grid">`;
+      for (const a of ACHIEVEMENTS) {
+        const unlocked = owned.includes(a.id);
+        h += `<div class="tile ${unlocked ? 'achievement-done' : ''}">
+          <h3>${unlocked ? a.icon : '🔒'} ${a.name}</h3>
+          <div class="small">${a.desc}</div>
+          <div class="badge" style="margin-top:8px">${unlocked ? 'Unlocked' : 'Locked'}</div>
+        </div>`;
+      }
+      h += '</div>';
     }
 
     el.tabContent.innerHTML = h;

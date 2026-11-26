@@ -3,8 +3,10 @@ import {
   sellPrice, REPUTATION_START, REPUTATION_MAX
 } from '../data/products.js';
 import { rounded } from '../utils/math.js';
+import { ACHIEVEMENT_IDS } from '../systems/Achievements.js';
 
 const GRAPHICS_MODES = new Set(['low', 'medium', 'high']);
+const MAX_HISTORY = 60;
 
 export function defaultState() {
   const prices = {}, trends = {}, sellPrices = {};
@@ -33,7 +35,9 @@ export function defaultState() {
     graphics: 'high',
     reputation: REPUTATION_START,
     clock: 0,
-    lifetimeRevenue: 0
+    lifetimeRevenue: 0,
+    achievements: [],
+    history: []
   };
 }
 
@@ -50,6 +54,22 @@ function safeMap(saved, base, min, max) {
     result[key] = safeNumber(saved[key], base[key], min, max);
   }
   return result;
+}
+
+// Daily analytics rows: keep only structurally valid entries, newest last.
+function safeHistory(saved) {
+  if (!Array.isArray(saved)) return [];
+  return saved.filter(r => r && Number.isFinite(r.day) && Number.isFinite(r.revenue))
+    .slice(-MAX_HISTORY)
+    .map(r => ({
+      day: Math.floor(r.day),
+      revenue: safeNumber(r.revenue, 0, 0, 1e15),
+      stockCost: safeNumber(r.stockCost, 0, 0, 1e15),
+      recycle: safeNumber(r.recycle, 0, 0, 1e9),
+      happy: Math.floor(safeNumber(r.happy, 0, 0, 1e9)),
+      angry: Math.floor(safeNumber(r.angry, 0, 0, 1e9)),
+      ...(Number.isFinite(r.net) ? { net: rounded(safeNumber(r.net, 0, -1e15, 1e15)) } : {})
+    }));
 }
 
 // Accepts older saves (v1 had the same shape, minus the version field).
@@ -76,6 +96,9 @@ export function migrate(data) {
   m.sellPrices = safeMap(data.sellPrices, base.sellPrices, 0.01, 1e6);
   m.licenses = Array.isArray(data.licenses)
     ? [...new Set(data.licenses.filter(id => LICENSES.some(l => l.id === id)))] : [];
+  m.achievements = Array.isArray(data.achievements)
+    ? [...new Set(data.achievements.filter(id => ACHIEVEMENT_IDS.has(id)))] : [];
+  m.history = safeHistory(data.history);
   m.staff = {
     restocker: !!(data.staff && data.staff.restocker),
     cashier: !!(data.staff && data.staff.cashier)

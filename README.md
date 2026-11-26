@@ -55,12 +55,16 @@ on-screen controls automatically.
    - **🔨 Build / Furniture** — shelves ($150), refrigerators ($280), store expansion (+4 spots).
    - **👥 Staff** — hire a restocker and/or cashier (wages charged daily).
    - **🎨 Customize** — rename the 3D store sign.
-6. The day runs 8:00 AM → 9:00 PM. At closing, review the daily report (revenue, stock costs, wages, rent & utilities, recycling, objective bonus) and start the next day with fresh prices and deliveries.
+   - **📊 Analytics** — lifetime totals, average net profit, best day, satisfaction rate and a last-7-days profit chart.
+   - **🏆 Achievements** — seven persistent milestones with unlock status.
+6. The day runs 8:00 AM → 9:00 PM. At closing, review the daily report (revenue, stock costs, wages, rent & utilities, recycling, objective bonus, new achievements) and start the next day with fresh prices and deliveries.
 
 ## Systems
 
 - **Reputation (⭐ 0–5)** — happy customers raise it, angry ones (empty shelves, long queues, wrong change) lower it. It scales how often new customers arrive (0 → 0.5×, 5 → 1.5×) and is shown in the top HUD.
 - **Daily objective (🎯)** — one rotating goal per day (serve N happy customers / earn $N / recycle N boxes). Completing it pays a bonus at closing; progress is shown in the terminal's Pricing tab and the daily report.
+- **Analytics (📊)** — each closed day is stored in `state.history` (last 60 days); the terminal shows lifetime totals, average net, best day, satisfaction rate and a 7-day profit chart. Today's runtime stats are included in the dashboard before closing.
+- **Achievements (🏆)** — seven persistent milestones (first day, $1,000 cash, 5 stars, 50 happy customers, 20 recycled boxes, 4 licenses, flawless day). They unlock at day close, during autosave, or when an old save is loaded; new unlocks appear as a toast and in the daily report.
 - **Customer preferences & patience** — each shopper has a favourite aisle (buying from it makes them happier) and a limited patience in the checkout queue before they leave angry.
 - **Operating costs** — rent ($80/day) plus utilities per refrigerator ($6/day) are deducted at closing.
 - **Dynamic pricing** — wholesale prices move daily; your shelf price is independent and clamped between cost and 4× the default markup.
@@ -82,7 +86,8 @@ src/
   world/                  Store world, lighting, shelf factory (shared asset cache)
   entities/               Player, customer AI/model, staff
   systems/                Interaction, delivery, checkout, economy,
-                          pricing, reputation, objectives
+                          pricing, reputation, objectives, analytics,
+                          achievements
   ui/                     HUD/terminal/pause/checkout/summary UI
   data/                   Products, licenses, layout constants, tuning
   utils/                  Math, canvas textures, mesh helpers, GLB loader
@@ -92,6 +97,7 @@ tests/
   smoke.test.js           data/economy/objective + GLB export sanity checks (node:test)
   controls.test.js        yaw-relative movement, key normalization, sprint, lock errors
   save.test.js            save migration/validation + debounced write scheduling
+  progression.test.js     analytics aggregation + one-time achievement unlocks
 ```
 
 `npm test` runs all `tests/**/*.test.js` with zero dependencies (`node --test`).

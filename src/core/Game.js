@@ -20,6 +20,8 @@ import { spawnDelivery } from '../systems/DeliverySystem.js';
 import { fluctuatePrices, wages, operatingCost } from '../systems/EconomySystem.js';
 import { spawnRate } from '../systems/Reputation.js';
 import { evaluateObjective } from '../systems/Objectives.js';
+import { dayRecord } from '../systems/Analytics.js';
+import { checkAchievements } from '../systems/Achievements.js';
 
 export default class Game {
   constructor() {
@@ -89,6 +91,14 @@ export default class Game {
     this.input.clearKeys();
     this.lastTime = performance.now();
     if (this.input.wantsPointerLock) this.input.requestLock();
+    if (this.pendingAchievements?.length) {
+      this.announceAchievements(this.pendingAchievements);
+      this.pendingAchievements = [];
+    }
+  }
+
+  announceAchievements(earned) {
+    for (const a of earned) this.ui.toast(`${a.icon} Achievement unlocked: ${a.name}`);
   }
 
   pauseGame() {
@@ -138,6 +148,9 @@ export default class Game {
     document.getElementById('loading').style.display = 'none';
     this.ui.updateHUD();
     this.ui.syncMode(this.mode);
+    // Old saves may already satisfy milestones that had no system yet.
+    this.pendingAchievements = checkAchievements(this.state);
+    if (this.pendingAchievements.length) this.save(false, true);
     this.camera.position.copy(this.player.pos);
     requestAnimationFrame(t => this.animate(t));
   }
@@ -170,6 +183,7 @@ export default class Game {
       : '');
     if (this.mode === 'playing' && now - this.lastAutosave > 20000) {
       this.lastAutosave = now;
+      this.announceAchievements(checkAchievements(this.state, this.runtime.stats));
       this.save(false);
     }
     this.renderer.render(this.scene, this.camera);
@@ -261,6 +275,11 @@ export default class Game {
     const { obj, progress, met, bonus } = evaluateObjective(this);
     this.state.cash = rounded(this.state.cash - wage - upkeep + bonus);
     const net = rounded(st.revenue + st.recycle + bonus - st.stockCost - wage - upkeep);
+    const record = dayRecord(this.state, st, { net });
+    if (!Array.isArray(this.state.history)) this.state.history = [];
+    this.state.history.push(record);
+    if (this.state.history.length > 60) this.state.history.splice(0, this.state.history.length - 60);
+    const earned = checkAchievements(this.state, null, record);
     if (this.state.cash < WAGE_RESTOCKER) this.state.staff.restocker = false;
     if (this.state.cash < WAGE_CASHIER) this.state.staff.cashier = false;
     this.ui.summary.render({
@@ -275,9 +294,11 @@ export default class Game {
       net,
       happy: st.happy,
       angry: st.angry,
-      cash: this.state.cash
+      cash: this.state.cash,
+      achievements: earned
     });
     this.save(false, true);
+    this.announceAchievements(earned);
   }
 
   nextDay() {
