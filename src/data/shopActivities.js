@@ -7,8 +7,7 @@ export const SHOP_ACTIVITIES = {
   bakery: {
     type: 'timing',
     title: 'Pull a fresh batch',
-    description:
-      'Watch the oven timer and pull the tray while the crust is in the golden band.',
+    description: 'Watch the oven timer and pull the tray while the crust is in the golden band.',
     rounds: 3,
     pay: 16,
     rep: 0.05,
@@ -163,7 +162,12 @@ export const SHOP_ACTIVITIES = {
       },
       {
         prompt: 'Customer: “I need comfortable shoes for a long museum day — size 42.”',
-        options: ['Cushioned trainers — 42', 'Formal loafers — 42', 'Beach flip-flops — 42', 'Silk scarf — one size'],
+        options: [
+          'Cushioned trainers — 42',
+          'Formal loafers — 42',
+          'Beach flip-flops — 42',
+          'Silk scarf — one size'
+        ],
         answer: 0,
         success: 'Cushioned trainers are the sensible pick.',
         failure: 'A long walk needs comfortable shoes.'
@@ -183,7 +187,12 @@ export const SHOP_ACTIVITIES = {
     cases: [
       {
         prompt: 'Customer: “My phone only charges if I wiggle the cable.”',
-        options: ['Replace the charging port', 'Replace the screen', 'Update the wallpaper', 'Buy a new ringtone'],
+        options: [
+          'Replace the charging port',
+          'Replace the screen',
+          'Update the wallpaper',
+          'Buy a new ringtone'
+        ],
         answer: 0,
         success: 'A worn charging port is the classic cause. Fixed.',
         failure: 'That will not help a loose charging connection.'
@@ -275,7 +284,8 @@ export function activityRound(config, roundIndex, order) {
 
   const cases = config.cases || [];
   if (!cases.length) return null;
-  const caseIndex = order && order.length ? order[roundIndex % order.length] : roundIndex % cases.length;
+  const caseIndex =
+    order && order.length ? order[roundIndex % order.length] : roundIndex % cases.length;
   const source = cases[caseIndex];
   const options = source.options.map((label, index) => ({
     label,

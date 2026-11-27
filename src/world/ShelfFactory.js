@@ -157,7 +157,10 @@ export function createShelfMesh(shd, game) {
   const label = new THREE.Mesh(
     new THREE.PlaneGeometry(1.8, 0.45),
     new THREE.MeshBasicMaterial({
-      map: labelTexture(PRODUCTS[shd.productId]?.name || 'Shelf', PRODUCTS[shd.productId]?.color || 0x888888)
+      map: labelTexture(
+        PRODUCTS[shd.productId]?.name || 'Shelf',
+        PRODUCTS[shd.productId]?.color || 0x888888
+      )
     })
   );
   label.position.set(0, 2.62, 0.2);

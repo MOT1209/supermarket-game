@@ -297,7 +297,8 @@ export function offersUsedToday(state, businessId, offerId) {
 
 export function shiftsServedToday(state, businessId) {
   const root = state.businesses;
-  const activities = root && root.activities && typeof root.activities === 'object' ? root.activities : {};
+  const activities =
+    root && root.activities && typeof root.activities === 'object' ? root.activities : {};
   const used = activities[businessId];
   return Number.isFinite(used) ? Math.max(0, Math.floor(used)) : 0;
 }

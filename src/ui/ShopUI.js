@@ -1,9 +1,4 @@
-import {
-  BUSINESSES,
-  canUseOffer,
-  offersUsedToday,
-  shiftsServedToday
-} from '../data/businesses.js';
+import { BUSINESSES, canUseOffer, offersUsedToday, shiftsServedToday } from '../data/businesses.js';
 import { SHOP_ACTIVITIES } from '../data/shopActivities.js';
 
 function percent(value) {

@@ -91,37 +91,39 @@ export function playAnim(c, name, fade = 0.25) {
 export function spawnCustomer(game) {
   if (game.runtime.customers.length >= MAX_CUSTOMERS) return;
   const file = pick(CHAR_FILES);
-  Promise.all([cloneModel(file), loadModel(file)]).then(([model, original]) => {
-    if (!model) return;
-    const g = model;
-    const emoji = makeEmoji();
-    g.add(emoji);
-    g.position.set(rand(-1, 1), 0, 16);
-    g.scale.setScalar(rand(0.95, 1.05));
-    game.scene.add(g);
-    const c = {
-      group: g,
-      mixer: null,
-      actions: null,
-      currentAnim: null,
-      emoji,
-      state: 'enter',
-      timer: 0,
-      basket: [],
-      queueIndex: -1,
-      emojiTimer: 0,
-      visits: 0,
-      moving: false,
-      walkPhase: rand(0, 6),
-      pref: pick(CATEGORIES),
-      patience: rand(22, 40),
-      prefFound: false,
-      exitTarget: { x: rand(-1.6, 1.6), z: 16.5 }
-    };
-    const anims = (original && original.userData && original.userData.animations) || [];
-    setupAnimations(c, model, anims);
-    game.runtime.customers.push(c);
-  }).catch((err) => console.warn('[Customer] spawn failed', err));
+  Promise.all([cloneModel(file), loadModel(file)])
+    .then(([model, original]) => {
+      if (!model) return;
+      const g = model;
+      const emoji = makeEmoji();
+      g.add(emoji);
+      g.position.set(rand(-1, 1), 0, 16);
+      g.scale.setScalar(rand(0.95, 1.05));
+      game.scene.add(g);
+      const c = {
+        group: g,
+        mixer: null,
+        actions: null,
+        currentAnim: null,
+        emoji,
+        state: 'enter',
+        timer: 0,
+        basket: [],
+        queueIndex: -1,
+        emojiTimer: 0,
+        visits: 0,
+        moving: false,
+        walkPhase: rand(0, 6),
+        pref: pick(CATEGORIES),
+        patience: rand(22, 40),
+        prefFound: false,
+        exitTarget: { x: rand(-1.6, 1.6), z: 16.5 }
+      };
+      const anims = (original && original.userData && original.userData.animations) || [];
+      setupAnimations(c, model, anims);
+      game.runtime.customers.push(c);
+    })
+    .catch((err) => console.warn('[Customer] spawn failed', err));
 }
 
 export const basketTotal = (game, c) =>

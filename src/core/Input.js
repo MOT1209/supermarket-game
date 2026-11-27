@@ -90,9 +90,11 @@ export default class Input {
     } else if (k === 'q') this.game.onDrop();
     else if (k === 'l' && this.wantsPointerLock && !this.locked) this.requestLock();
     else if (k === 'b') this.game.buildSystem?.toggle();
-    else if (k === 'r') { if (this.game.buildSystem?.enabled) this.game.buildSystem.rotate(); }
-    else if (k === 'x') { if (this.game.buildSystem?.enabled) this.game.buildSystem.cancel(); }
-    else if (k === 'm') this.game.ui?.toggleCityUI?.();
+    else if (k === 'r') {
+      if (this.game.buildSystem?.enabled) this.game.buildSystem.rotate();
+    } else if (k === 'x') {
+      if (this.game.buildSystem?.enabled) this.game.buildSystem.cancel();
+    } else if (k === 'm') this.game.ui?.toggleCityUI?.();
   }
 
   onKeyUp(e) {

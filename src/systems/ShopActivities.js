@@ -34,7 +34,10 @@ export default class ShopActivities {
     if (!config) return { ok: false, reason: 'This station is not ready yet.' };
     this.ensureRoot();
     if (this.remaining(businessId) <= 0) {
-      return { ok: false, reason: 'The staff are done with walk-ins for today. Come back tomorrow.' };
+      return {
+        ok: false,
+        reason: 'The staff are done with walk-ins for today. Come back tomorrow.'
+      };
     }
     this.session = {
       businessId,

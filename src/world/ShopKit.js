@@ -76,8 +76,9 @@ export function circle(parent, radius, material, x, y, z, options = {}) {
 
 export function cylinder(parent, radiusTop, radiusBottom, height, material, x, y, z, options = {}) {
   const mesh = new THREE.Mesh(
-    kitGeometry(`cylinder-${radiusTop}-${radiusBottom}-${height}-${options.segments || 10}`, () =>
-      new THREE.CylinderGeometry(radiusTop, radiusBottom, height, options.segments || 10)
+    kitGeometry(
+      `cylinder-${radiusTop}-${radiusBottom}-${height}-${options.segments || 10}`,
+      () => new THREE.CylinderGeometry(radiusTop, radiusBottom, height, options.segments || 10)
     ),
     material
   );
@@ -91,8 +92,9 @@ export function cylinder(parent, radiusTop, radiusBottom, height, material, x, y
 
 export function sphere(parent, radius, material, x, y, z, options = {}) {
   const mesh = new THREE.Mesh(
-    kitGeometry(`sphere-${radius}-${options.segments || 10}`, () =>
-      new THREE.SphereGeometry(radius, options.segments || 10, options.segments || 8)
+    kitGeometry(
+      `sphere-${radius}-${options.segments || 10}`,
+      () => new THREE.SphereGeometry(radius, options.segments || 10, options.segments || 8)
     ),
     material
   );

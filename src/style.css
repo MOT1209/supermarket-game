@@ -589,7 +589,9 @@ input[type='range'] {
   font-size: 14px;
   line-height: 1.35;
   cursor: pointer;
-  transition: border-color 0.12s, background 0.12s;
+  transition:
+    border-color 0.12s,
+    background 0.12s;
 }
 .shop-choice:hover {
   background: #1d3524;

@@ -44,7 +44,14 @@ export function makeShopPerson({ role = 'customer', staff = false, palette = {} 
   root.add(rig);
 
   // Torso, hips, neck.
-  part(rig, geo('person-torso', () => new THREE.CylinderGeometry(0.27, 0.32, 0.82, 10)), mat(shirt), 0, 1.14, 0);
+  part(
+    rig,
+    geo('person-torso', () => new THREE.CylinderGeometry(0.27, 0.32, 0.82, 10)),
+    mat(shirt),
+    0,
+    1.14,
+    0
+  );
   part(
     rig,
     geo('person-hips', () => new THREE.CylinderGeometry(0.29, 0.26, 0.24, 10)),
@@ -63,7 +70,14 @@ export function makeShopPerson({ role = 'customer', staff = false, palette = {} 
   );
 
   // Apron front.
-  part(rig, geo('person-apron', () => new THREE.BoxGeometry(0.42, 0.62, 0.04)), mat(apronColor), 0, 1.06, 0.28);
+  part(
+    rig,
+    geo('person-apron', () => new THREE.BoxGeometry(0.42, 0.62, 0.04)),
+    mat(apronColor),
+    0,
+    1.06,
+    0.28
+  );
   if (staff) {
     part(
       rig,
@@ -87,15 +101,32 @@ export function makeShopPerson({ role = 'customer', staff = false, palette = {} 
   head.scale.set(1, 1.07, 0.94);
   const hairMesh = part(
     rig,
-    geo('person-hair', () => new THREE.SphereGeometry(0.238, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.6)),
+    geo(
+      'person-hair',
+      () => new THREE.SphereGeometry(0.238, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.6)
+    ),
     mat(hair),
     0,
     1.84,
     -0.015
   );
   hairMesh.scale.set(1.02, 1.03, 1.01);
-  part(rig, geo('person-ear', () => new THREE.SphereGeometry(0.05, 8, 8)), mat(skin), -0.225, 1.8, 0);
-  part(rig, geo('person-ear', () => new THREE.SphereGeometry(0.05, 8, 8)), mat(skin), 0.225, 1.8, 0);
+  part(
+    rig,
+    geo('person-ear', () => new THREE.SphereGeometry(0.05, 8, 8)),
+    mat(skin),
+    -0.225,
+    1.8,
+    0
+  );
+  part(
+    rig,
+    geo('person-ear', () => new THREE.SphereGeometry(0.05, 8, 8)),
+    mat(skin),
+    0.225,
+    1.8,
+    0
+  );
   const eyeGeo = geo('person-eye', () => new THREE.SphereGeometry(0.022, 8, 8));
   part(rig, eyeGeo, kitMaterial('person-eye', 0x1b1b22), -0.085, 1.84, 0.205);
   part(rig, eyeGeo, kitMaterial('person-eye', 0x1b1b22), 0.085, 1.84, 0.205);
@@ -157,7 +188,14 @@ export function makeShopPerson({ role = 'customer', staff = false, palette = {} 
       const basket = new THREE.Group();
       basket.position.set(0.33, 0.9, 0.08);
       const basketMat = mat(pick([0xd98b2b, 0xc4453a, 0x3f8f6a]));
-      part(basket, geo('person-basket', () => new THREE.BoxGeometry(0.36, 0.22, 0.28)), basketMat, 0, 0, 0);
+      part(
+        basket,
+        geo('person-basket', () => new THREE.BoxGeometry(0.36, 0.22, 0.28)),
+        basketMat,
+        0,
+        0,
+        0
+      );
       part(
         basket,
         geo('person-basket-handle', () => new THREE.TorusGeometry(0.14, 0.014, 6, 12, Math.PI)),
@@ -175,9 +213,30 @@ export function makeShopPerson({ role = 'customer', staff = false, palette = {} 
     const pivot = new THREE.Group();
     pivot.position.set(side * 0.33, 1.48, 0);
     rig.add(pivot);
-    part(pivot, geo('person-sleeve', () => new THREE.CylinderGeometry(0.075, 0.065, 0.36, 8)), mat(shirt), 0, -0.18, 0);
-    part(pivot, geo('person-forearm', () => new THREE.CylinderGeometry(0.055, 0.05, 0.3, 8)), mat(skin), 0, -0.5, 0);
-    part(pivot, geo('person-hand', () => new THREE.SphereGeometry(0.068, 8, 8)), mat(skin), 0, -0.68, 0);
+    part(
+      pivot,
+      geo('person-sleeve', () => new THREE.CylinderGeometry(0.075, 0.065, 0.36, 8)),
+      mat(shirt),
+      0,
+      -0.18,
+      0
+    );
+    part(
+      pivot,
+      geo('person-forearm', () => new THREE.CylinderGeometry(0.055, 0.05, 0.3, 8)),
+      mat(skin),
+      0,
+      -0.5,
+      0
+    );
+    part(
+      pivot,
+      geo('person-hand', () => new THREE.SphereGeometry(0.068, 8, 8)),
+      mat(skin),
+      0,
+      -0.68,
+      0
+    );
     return pivot;
   };
   const armL = makeArm(-1);
@@ -188,8 +247,22 @@ export function makeShopPerson({ role = 'customer', staff = false, palette = {} 
     const pivot = new THREE.Group();
     pivot.position.set(side * 0.14, 0.72, 0);
     rig.add(pivot);
-    part(pivot, geo('person-leg', () => new THREE.CylinderGeometry(0.098, 0.085, 0.62, 8)), mat(pants), 0, -0.31, 0);
-    part(pivot, geo('person-shoe', () => new THREE.BoxGeometry(0.18, 0.09, 0.28)), mat(shoe), 0, -0.65, 0.065);
+    part(
+      pivot,
+      geo('person-leg', () => new THREE.CylinderGeometry(0.098, 0.085, 0.62, 8)),
+      mat(pants),
+      0,
+      -0.31,
+      0
+    );
+    part(
+      pivot,
+      geo('person-shoe', () => new THREE.BoxGeometry(0.18, 0.09, 0.28)),
+      mat(shoe),
+      0,
+      -0.65,
+      0.065
+    );
     return pivot;
   };
   const legL = makeLeg(-1);

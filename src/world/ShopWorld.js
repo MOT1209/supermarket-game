@@ -114,8 +114,26 @@ export default class ShopWorld {
     const windowOuter = 5.8;
     const windowWidth = windowOuter - windowInner;
     const windowCenter = (windowInner + windowOuter) / 2;
-    box(g, HALF_W - windowOuter, WALL_H, 0.34, frontMat, -(windowOuter + HALF_W) / 2, WALL_H / 2, FRONT);
-    box(g, HALF_W - windowOuter, WALL_H, 0.34, frontMat, (windowOuter + HALF_W) / 2, WALL_H / 2, FRONT);
+    box(
+      g,
+      HALF_W - windowOuter,
+      WALL_H,
+      0.34,
+      frontMat,
+      -(windowOuter + HALF_W) / 2,
+      WALL_H / 2,
+      FRONT
+    );
+    box(
+      g,
+      HALF_W - windowOuter,
+      WALL_H,
+      0.34,
+      frontMat,
+      (windowOuter + HALF_W) / 2,
+      WALL_H / 2,
+      FRONT
+    );
     for (const side of [-1, 1]) {
       box(
         g,
@@ -123,20 +141,11 @@ export default class ShopWorld {
         WALL_H,
         0.34,
         frontMat,
-        side * (DOOR_HALF + windowInner) / 2,
+        (side * (DOOR_HALF + windowInner)) / 2,
         WALL_H / 2,
         FRONT
       );
-      box(
-        g,
-        windowWidth,
-        0.4,
-        0.34,
-        frontMat,
-        side * windowCenter,
-        0.2,
-        FRONT
-      );
+      box(g, windowWidth, 0.4, 0.34, frontMat, side * windowCenter, 0.2, FRONT);
       box(
         g,
         windowWidth,
@@ -148,7 +157,16 @@ export default class ShopWorld {
         FRONT
       );
     }
-    box(g, DOOR_HALF * 2, WALL_H - DOOR_H, 0.34, frontMat, 0, DOOR_H + (WALL_H - DOOR_H) / 2, FRONT);
+    box(
+      g,
+      DOOR_HALF * 2,
+      WALL_H - DOOR_H,
+      0.34,
+      frontMat,
+      0,
+      DOOR_H + (WALL_H - DOOR_H) / 2,
+      FRONT
+    );
 
     // Roof slab and a readable parapet.
     box(g, 12.9, 0.3, 12.5, SHOP_MAT.roof, 0, WALL_H + 0.14, 5.8);
@@ -162,26 +180,8 @@ export default class ShopWorld {
     box(g, 0.06, 4.42, 11.8, wallMat, -HALF_W + 0.2, 2.23, 5.8);
     box(g, 0.06, 4.42, 11.8, wallMat, HALF_W - 0.2, 2.23, 5.8);
     for (const side of [-1, 1]) {
-      box(
-        g,
-        windowWidth - 0.1,
-        0.08,
-        0.06,
-        wallMat,
-        side * windowCenter,
-        3.0,
-        0.02
-      );
-      box(
-        g,
-        windowWidth - 0.1,
-        0.08,
-        0.06,
-        wallMat,
-        side * windowCenter,
-        0.42,
-        0.02
-      );
+      box(g, windowWidth - 0.1, 0.08, 0.06, wallMat, side * windowCenter, 3.0, 0.02);
+      box(g, windowWidth - 0.1, 0.08, 0.06, wallMat, side * windowCenter, 0.42, 0.02);
     }
     box(g, 12.2, 0.16, 0.05, accentMat, 0, 0.16, BACK - 0.22);
     box(g, 0.05, 0.16, 11.6, accentMat, -HALF_W + 0.25, 0.16, 5.8);
@@ -227,7 +227,16 @@ export default class ShopWorld {
       box(g, 0.1, 2.7, 0.12, frameMat, x - windowWidth / 2, 1.71, FRONT - 0.18);
       box(g, 0.1, 2.7, 0.12, frameMat, x + windowWidth / 2, 1.71, FRONT - 0.18);
       box(g, 0.08, 2.56, 0.1, frameMat, x, 1.71, FRONT - 0.18);
-      box(g, windowWidth + 0.28, 0.08, 0.38, kitMaterial(`sill-${b.id}`, b.trim), x, 0.42, FRONT - 0.24);
+      box(
+        g,
+        windowWidth + 0.28,
+        0.08,
+        0.38,
+        kitMaterial(`sill-${b.id}`, b.trim),
+        x,
+        0.42,
+        FRONT - 0.24
+      );
 
       // A shallow stage behind each window shows the shop's goods.
       this.buildWindowDisplay(b, shop, side);
@@ -594,14 +603,33 @@ export default class ShopWorld {
     } else if (style === 'cafe') {
       for (let row = 0; row < 2; row++) {
         for (let i = 0; i < 3; i++) {
-          box(g, 0.36, 0.38, 0.26, matForPerson([0x5a3a22, 0x7a4f2c, 0x3e6b4e][(i + index) % 3]), x - 0.5 + i * 0.5, yBase + 0.18 + row * 0.66, 10.38);
+          box(
+            g,
+            0.36,
+            0.38,
+            0.26,
+            matForPerson([0x5a3a22, 0x7a4f2c, 0x3e6b4e][(i + index) % 3]),
+            x - 0.5 + i * 0.5,
+            yBase + 0.18 + row * 0.66,
+            10.38
+          );
         }
       }
     } else if (style === 'pharmacy') {
       for (let row = 0; row < 2; row++) {
         for (let i = 0; i < 4; i++) {
           const c = [0x5fb7cf, 0xf1f4ef, 0x62c98e, 0xd8a85f][(i + index) % 4];
-          cylinder(g, 0.09, 0.09, 0.38, matForPerson(c), x - 0.6 + i * 0.4, yBase + 0.2 + row * 0.66, 10.38, { segments: 8 });
+          cylinder(
+            g,
+            0.09,
+            0.09,
+            0.38,
+            matForPerson(c),
+            x - 0.6 + i * 0.4,
+            yBase + 0.2 + row * 0.66,
+            10.38,
+            { segments: 8 }
+          );
         }
       }
     } else if (style === 'clothing') {
@@ -622,7 +650,16 @@ export default class ShopWorld {
     } else {
       for (let row = 0; row < 2; row++) {
         for (let i = 0; i < 3; i++) {
-          box(g, 0.36, 0.22, 0.28, matForPerson([0x29353d, 0x394b54, 0x1d2429][(i + index) % 3]), x - 0.5 + i * 0.5, yBase + 0.12 + row * 0.66, 10.38);
+          box(
+            g,
+            0.36,
+            0.22,
+            0.28,
+            matForPerson([0x29353d, 0x394b54, 0x1d2429][(i + index) % 3]),
+            x - 0.5 + i * 0.5,
+            yBase + 0.12 + row * 0.66,
+            10.38
+          );
         }
       }
     }
@@ -646,15 +683,7 @@ export default class ShopWorld {
       file = SHOP_GLB.tailorTable;
       fallback = () => this.makeTailorFallback(b);
     }
-    const slot = this.addFixture(
-      shop,
-      file,
-      fallback,
-      station.x,
-      0.06,
-      station.z,
-      station.rot
-    );
+    const slot = this.addFixture(shop, file, fallback, station.x, 0.06, station.z, station.rot);
     this.tag(slot, b, 'shopGame', config?.title || 'Work a shift');
 
     const markerMat = kitMaterial(`marker-${b.id}`, b.glow, {
@@ -670,7 +699,13 @@ export default class ShopWorld {
     marker.castShadow = false;
     shop.group.add(marker);
     shop.markers.push(marker);
-    this.addLocalCollider(shop, station.x - 0.95, station.x + 0.95, station.z - 0.95, station.z + 0.95);
+    this.addLocalCollider(
+      shop,
+      station.x - 0.95,
+      station.x + 0.95,
+      station.z - 0.95,
+      station.z + 0.95
+    );
   }
 
   addStyleInterior(b, shop) {
@@ -703,7 +738,15 @@ export default class ShopWorld {
       this.addLocalCollider(shop, 2.7, 4.9, 5.6, 7.2);
       this.addLocalCollider(shop, 2.9, 5.8, 7.6, 8.4);
     } else if (style === 'clothing') {
-      this.addFixture(shop, SHOP_GLB.rack, () => this.makeRackFallback(b), -4.45, 0.06, 7.6, Math.PI / 2);
+      this.addFixture(
+        shop,
+        SHOP_GLB.rack,
+        () => this.makeRackFallback(b),
+        -4.45,
+        0.06,
+        7.6,
+        Math.PI / 2
+      );
       this.addFixture(shop, SHOP_GLB.rack, () => this.makeRackFallback(b), -5.1, 0.06, 10.35, 0);
       this.addFixture(shop, SHOP_GLB.rack, () => this.makeRackFallback(b), -2.9, 0.06, 10.35, 0);
       this.addFittingRoom(g, b);
@@ -712,7 +755,16 @@ export default class ShopWorld {
       box(g, 2.4, 0.45, 0.7, SHOP_MAT.wood, 3.9, 0.28, 5.0);
       box(g, 2.2, 0.12, 0.55, matForPerson(0x8a5b3a), 3.9, 0.55, 5.0);
       for (let i = 0; i < 3; i++) {
-        box(g, 0.5, 0.28, 0.4, matForPerson([0x304665, 0x78435f, 0xd5c2a2][i]), 3.2 + i * 0.7, 0.78, 5.0);
+        box(
+          g,
+          0.5,
+          0.28,
+          0.4,
+          matForPerson([0x304665, 0x78435f, 0xd5c2a2][i]),
+          3.2 + i * 0.7,
+          0.78,
+          5.0
+        );
       }
       this.addLocalCollider(shop, -5.7, -3.4, 2.3, 8.9);
       this.addLocalCollider(shop, -5.9, -1.8, 9.5, 11.4);
@@ -737,7 +789,16 @@ export default class ShopWorld {
       }
       box(g, 5.2, 0.24, 0.7, SHOP_MAT.darkMetal, 3.4, 0.16, 8.3);
       for (let i = 0; i < 3; i++) {
-        box(g, 0.55, 0.14, 0.4, matForPerson([0x28343c, 0x3d4a52, 0x1d2429][i]), 1.8 + i * 0.7, 0.35, 8.3);
+        box(
+          g,
+          0.55,
+          0.14,
+          0.4,
+          matForPerson([0x28343c, 0x3d4a52, 0x1d2429][i]),
+          1.8 + i * 0.7,
+          0.35,
+          8.3
+        );
       }
       this.addPendant(g, 0.8, 4.5, 5.4, b);
       this.addLocalCollider(shop, 1.5, 5.3, 7.8, 8.9);
@@ -870,7 +931,9 @@ export default class ShopWorld {
     shop.door.openedAt = this.time;
     if (this.game.audio) this.game.audio.play(shop.door.open ? 'pick' : 'place');
     this.game.ui.toast(
-      shop.door.open ? `${shop.business.shortName} door opened` : `${shop.business.shortName} door closed`
+      shop.door.open
+        ? `${shop.business.shortName} door opened`
+        : `${shop.business.shortName} door closed`
     );
     return shop.door.open;
   }
@@ -1094,14 +1157,20 @@ export default class ShopWorld {
   roundTable(material, diameter, thickness, height) {
     const g = new THREE.Group();
     const top = new THREE.Mesh(
-      kitGeometry(`table-${diameter}`, () => new THREE.CylinderGeometry(diameter / 2, diameter / 2, thickness, 18)),
+      kitGeometry(
+        `table-${diameter}`,
+        () => new THREE.CylinderGeometry(diameter / 2, diameter / 2, thickness, 18)
+      ),
       material
     );
     top.position.y = height;
     top.castShadow = true;
     g.add(top);
     const stem = new THREE.Mesh(
-      kitGeometry('table-stem', () => new THREE.CylinderGeometry(0.06, 0.08, height - thickness, 8)),
+      kitGeometry(
+        'table-stem',
+        () => new THREE.CylinderGeometry(0.06, 0.08, height - thickness, 8)
+      ),
       SHOP_MAT.metal
     );
     stem.position.y = (height - thickness) / 2;
@@ -1123,7 +1192,16 @@ export default class ShopWorld {
     box(g, 1.95, 0.06, 0.06, SHOP_MAT.metal, 0, 1.72, 0);
     box(g, 1.55, 0.06, 0.06, SHOP_MAT.metal, 0, 1.15, 0);
     for (let i = 0; i < 5; i++) {
-      box(g, 0.42, 0.9, 0.14, matForPerson([0x304665, 0x78435f, 0xd5c2a2, 0x3e5c46, 0x6b3f33][i]), -0.7 + i * 0.35, 1.48, 0.02);
+      box(
+        g,
+        0.42,
+        0.9,
+        0.14,
+        matForPerson([0x304665, 0x78435f, 0xd5c2a2, 0x3e5c46, 0x6b3f33][i]),
+        -0.7 + i * 0.35,
+        1.48,
+        0.02
+      );
     }
     return g;
   }
@@ -1177,11 +1255,21 @@ export default class ShopWorld {
 
   addLantern(parent, x, y, z, color) {
     box(parent, 0.06, 0.4, 0.06, SHOP_MAT.darkMetal, x, y + 0.3, z);
-    box(parent, 0.28, 0.36, 0.22, kitMaterial(`lantern-${color}`, color, {
-      emissive: color,
-      emissiveIntensity: 1.2,
-      roughness: 0.35
-    }), x, y, z, { cast: false });
+    box(
+      parent,
+      0.28,
+      0.36,
+      0.22,
+      kitMaterial(`lantern-${color}`, color, {
+        emissive: color,
+        emissiveIntensity: 1.2,
+        roughness: 0.35
+      }),
+      x,
+      y,
+      z,
+      { cast: false }
+    );
     return null;
   }
 
@@ -1189,12 +1277,28 @@ export default class ShopWorld {
     const pot = kitMaterial(`planter-${scale}`, 0x8d5b3c, { roughness: 0.92 });
     box(parent, scale * 1.4, scale, scale * 1.4, pot, x, y, z);
     sphere(parent, scale * 0.55, SHOP_MAT.leaf, x, y + scale * 0.7, z, { segments: 10 });
-    sphere(parent, scale * 0.38, SHOP_MAT.leaf, x - scale * 0.35, y + scale * 0.5, z + scale * 0.2, {
-      segments: 8
-    });
-    sphere(parent, scale * 0.32, SHOP_MAT.leaf, x + scale * 0.32, y + scale * 0.55, z - scale * 0.15, {
-      segments: 8
-    });
+    sphere(
+      parent,
+      scale * 0.38,
+      SHOP_MAT.leaf,
+      x - scale * 0.35,
+      y + scale * 0.5,
+      z + scale * 0.2,
+      {
+        segments: 8
+      }
+    );
+    sphere(
+      parent,
+      scale * 0.32,
+      SHOP_MAT.leaf,
+      x + scale * 0.32,
+      y + scale * 0.55,
+      z - scale * 0.15,
+      {
+        segments: 8
+      }
+    );
   }
 
   addSandwichBoard(parent, x, z, rotY, material, b) {
@@ -1309,10 +1413,19 @@ export default class ShopWorld {
     mirror.position.set(x, y, z);
     mirror.rotation.y = rotY;
     parent.add(mirror);
-    box(mirror, 1.1, 2.0, 0.08, kitMaterial('mirror-frame', b.exterior.style === 'clothing' ? 0xc9a86a : 0x53606a, {
-      metalness: 0.35,
-      roughness: 0.4
-    }), 0, 0, 0);
+    box(
+      mirror,
+      1.1,
+      2.0,
+      0.08,
+      kitMaterial('mirror-frame', b.exterior.style === 'clothing' ? 0xc9a86a : 0x53606a, {
+        metalness: 0.35,
+        roughness: 0.4
+      }),
+      0,
+      0,
+      0
+    );
     const glass = new THREE.Mesh(
       new THREE.PlaneGeometry(0.96, 1.86),
       kitMaterial('mirror-glass', 0xc8e3e6, {
