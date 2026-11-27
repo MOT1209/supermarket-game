@@ -23,6 +23,9 @@ export default class SummaryUI {
     const upkeepHtml = data.upkeep
       ? `<div class="stat"><span>🏠 Rent & Utilities</span><b class="money">-${money(data.upkeep)}</b></div>`
       : '';
+    const buildHtml = data.buildCost
+      ? `<div class="stat"><span>🔨 Build Costs</span><b class="money">-${money(data.buildCost)}</b></div>`
+      : '';
     const achievementsHtml = data.achievements?.length
       ? `<div class="stat" style="border-color:#f5c518"><span>🏆 New achievements</span><b>${data.achievements.map((a) => `${a.icon} ${a.name}`).join(' · ')}</b></div>`
       : '';
@@ -32,6 +35,7 @@ export default class SummaryUI {
       <div class="stat"><span>📦 Stock Costs</span><b class="money">-${money(data.stockCost)}</b></div>
       <div class="stat"><span>👥 Staff Wages</span><b class="money">-${money(data.wages)}</b></div>
       ${upkeepHtml}
+      ${buildHtml}
       <div class="stat"><span>♻ Recycling Bonus</span><b class="money">${money(data.recycle)}</b></div>
       ${bonusHtml}
       <div class="stat" style="border-color:#6fe089"><span>💰 Net Profit</span><b style="color:${data.net >= 0 ? '#8ff0a4' : '#ff7b6b'}">${money(data.net)}</b></div>

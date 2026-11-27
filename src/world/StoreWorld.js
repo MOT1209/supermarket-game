@@ -1,6 +1,15 @@
 import * as THREE from 'three';
 import { floorTexture, outsideTexture, signTexture, makeCanvas } from '../utils/textures.js';
 import { cloneModel } from '../utils/AssetLoader.js';
+import {
+  shelfRect,
+  storeFloors,
+  insideStore as buildInsideStore,
+  unlockedExpansions,
+  expansionDoorway,
+  WALL_HEIGHT
+} from '../data/build.js';
+import { disposeObject3D } from '../utils/dispose.js';
 
 const boxMesh = (w, h, d, color, opts = {}) => {
   const m = new THREE.Mesh(
@@ -17,6 +26,9 @@ export default class StoreWorld {
     this.game = game;
     this.interactables = [];
     this.colliders = [];
+    this.structure = null;
+    this.walls = [];
+    this.structureLevel = 0;
   }
 
   tagInteract(obj, type, prompt) {
@@ -35,11 +47,11 @@ export default class StoreWorld {
     floor.receiveShadow = true;
     scene.add(floor);
     const yard = new THREE.Mesh(
-      new THREE.PlaneGeometry(50, 26),
+      new THREE.PlaneGeometry(28, 5.4),
       new THREE.MeshStandardMaterial({ map: outsideTexture() })
     );
     yard.rotation.x = -Math.PI / 2;
-    yard.position.set(0, -0.02, 20);
+    yard.position.set(0, -0.02, 16.4);
     yard.receiveShadow = true;
     scene.add(yard);
 
@@ -63,9 +75,8 @@ export default class StoreWorld {
       this.shell.add(m);
       return m;
     };
-    wall(0, -12, 24, 0.5, 5);
-    wall(-12, 0, 0.5, 24, 5);
-    wall(12, 0, 0.5, 24, 5);
+    // The back and side walls (with expansion doorways) come from
+    // rebuildStructure(); the shell keeps the front facade as a fallback.
     wall(-7.25, 12, 9.5, 0.5, 5);
     wall(7.25, 12, 9.5, 0.5, 5);
     wall(0, 12, 5, 0.5, 1.2);
@@ -84,18 +95,7 @@ export default class StoreWorld {
     ceil.position.y = 5;
     this.shell.add(ceil);
 
-    // --- Decor: wall trim, welcome mat, plants and aisle signs ---
-    const trimMat = new THREE.MeshStandardMaterial({ color: 0x9dbb9d, roughness: 0.9 });
-    const addTrim = (x, z, w, d) => {
-      const m = new THREE.Mesh(new THREE.BoxGeometry(w, 1.0, d), trimMat);
-      m.position.set(x, 0.5, z);
-      m.receiveShadow = true;
-      scene.add(m);
-    };
-    addTrim(0, -11.7, 23.6, 0.06);
-    addTrim(-11.7, 0, 0.06, 23.6);
-    addTrim(11.7, 0, 0.06, 23.6);
-
+    // --- Decor: welcome mat, plants and aisle signs ---
     const mat = new THREE.Mesh(
       new THREE.PlaneGeometry(3.4, 1.6),
       new THREE.MeshStandardMaterial({
@@ -236,7 +236,7 @@ export default class StoreWorld {
       })
     );
     zone.rotation.x = -Math.PI / 2;
-    zone.position.set(0, 0.01, 16);
+    zone.position.set(0, 0.01, 16.4);
     scene.add(zone);
     const beacon = new THREE.Group();
     const cone = new THREE.Mesh(
@@ -252,12 +252,12 @@ export default class StoreWorld {
     ring.rotation.x = Math.PI / 2;
     ring.position.y = -0.9;
     beacon.add(ring);
-    beacon.position.set(0, 3.4, 16);
+    beacon.position.set(0, 3.4, 16.4);
     beacon.visible = false;
     scene.add(beacon);
     this.beacon = beacon;
     this.beaconLight = new THREE.PointLight(0x7dff9a, 0, 12);
-    this.beaconLight.position.set(0, 3, 16);
+    this.beaconLight.position.set(0, 3, 16.4);
     scene.add(this.beaconLight);
 
     // Dumpster
@@ -273,7 +273,7 @@ export default class StoreWorld {
     this.tagInteract(dump, 'dumpster', 'Dumpster — dispose of trash boxes');
     this.dumpster = dump;
 
-    this.rebuildColliders();
+    this.rebuildStructure();
     this.addBlenderProps();
   }
 
@@ -288,21 +288,23 @@ export default class StoreWorld {
       ['cashier.glb', [7, 0, 6.2], Math.PI],
       ['customer_1.glb', [2.5, 0, 10], Math.PI],
       ['customer_2.glb', [-3.5, 0, 9.5], 0.4],
-      ['customer_3.glb', [4.5, 0, 10.2], -0.6],
-      ['car.glb', [2.5, 0, 23], Math.PI],
-      ['street_kit.glb', [0, 0, 30], 0],
-      ['house.glb', [-11, 0, 27], Math.PI / 4]
+      ['customer_3.glb', [4.5, 0, 10.2], -0.6]
     ];
     for (const [file, pos, rotation] of placements) {
       const model = await cloneModel(file);
       if (!model) continue;
       model.rotation.y = rotation;
       if (file === 'store_shell.glb') {
-        // Keep the textured procedural floor; hide only the duplicated slab.
+        // Keep the textured procedural floor and generated walls; hide the
+        // duplicated GLB parts so doorways line up with the structure.
         model.traverse((mesh) => {
-          if (mesh.isMesh && mesh.name === 'floor_slab') mesh.visible = false;
+          if (!mesh.isMesh) return;
+          if (['floor_slab', 'wall_back', 'wall_left', 'wall_right'].includes(mesh.name)) {
+            mesh.visible = false;
+          }
         });
         if (this.shell) this.shell.visible = false;
+        this.rebuildStructure();
       }
       if (file === 'checkout_counter.glb' && this.register) {
         this.register.clear();
@@ -314,22 +316,187 @@ export default class StoreWorld {
     }
   }
 
+  // Rebuild the wall geometry and the collider set for the current level.
+  rebuildStructure() {
+    if (!this.game?.scene) return;
+    if (!this.structure) {
+      this.structure = new THREE.Group();
+      this.structure.name = 'store_structure';
+      this.game.scene.add(this.structure);
+    }
+    const level = Math.max(1, Math.floor(Number(this.game.state?.level) || 1));
+    if (this.structureLevel === level) {
+      this.rebuildColliders();
+      return;
+    }
+    this.structureLevel = level;
+
+    const old = [...this.structure.children];
+    for (const child of old) {
+      this.structure.remove(child);
+      disposeObject3D(child);
+    }
+
+    this.walls = this.structureWalls(level);
+    for (const w of this.walls) this.addWall(w);
+    for (const rect of storeFloors(level).slice(1)) this.addRoomSurfaces(rect);
+    this.rebuildColliders();
+  }
+
+  // Walls are built once per boundary: the base floor owns its back/left/right
+  // walls and each expansion owns its three outer walls. A doorway is cut
+  // wherever a later expansion touches an existing wall.
+  structureWalls(level) {
+    const walls = [
+      { axis: 'x', at: -12, from: -12, to: 12, height: WALL_HEIGHT },
+      { axis: 'z', at: -12, from: -12, to: 12, height: WALL_HEIGHT },
+      { axis: 'z', at: 12, from: -12, to: 12, height: WALL_HEIGHT }
+    ];
+    const expansions = unlockedExpansions(level);
+    for (const e of expansions) {
+      const r = e.rect;
+      if (e.wall === 'back') {
+        walls.push(
+          { axis: 'x', at: r.minZ, from: r.minX, to: r.maxX, height: WALL_HEIGHT },
+          { axis: 'z', at: r.minX, from: r.minZ, to: r.maxZ, height: WALL_HEIGHT },
+          { axis: 'z', at: r.maxX, from: r.minZ, to: r.maxZ, height: WALL_HEIGHT }
+        );
+      } else {
+        walls.push(
+          { axis: 'x', at: r.minZ, from: r.minX, to: r.maxX, height: WALL_HEIGHT },
+          { axis: 'x', at: r.maxZ, from: r.minX, to: r.maxX, height: WALL_HEIGHT },
+          {
+            axis: 'z',
+            at: e.wall === 'left' ? r.minX : r.maxX,
+            from: r.minZ,
+            to: r.maxZ,
+            height: WALL_HEIGHT
+          }
+        );
+      }
+    }
+    for (const e of expansions) {
+      const door = expansionDoorway(e);
+      if (!door) continue;
+      for (const w of walls) {
+        if (w.axis !== door.axis || Math.abs(w.at - door.at) > 0.01) continue;
+        if (door.min < w.from - 0.01 || door.max > w.to + 0.01) continue;
+        w.openings = [...(w.openings || []), { min: door.min, max: door.max, height: door.height }];
+        break;
+      }
+    }
+    return walls;
+  }
+
+  // Full-height stretches of a wall, i.e. everything beside its doorways.
+  wallSegments(w) {
+    const segs = [];
+    let cursor = w.from;
+    for (const o of [...(w.openings || [])].sort((a, b) => a.min - b.min)) {
+      if (o.min > cursor + 0.01) segs.push({ from: cursor, to: o.min });
+      cursor = Math.max(cursor, o.max);
+    }
+    if (cursor < w.to - 0.01) segs.push({ from: cursor, to: w.to });
+    return segs;
+  }
+
+  addWall(w) {
+    const mat = new THREE.MeshStandardMaterial({ color: 0xe8efe6, roughness: 0.9 });
+    const thickness = 0.5;
+    const addBox = (from, to, y0, y1) => {
+      const len = to - from;
+      const h = y1 - y0;
+      if (len <= 0.01 || h <= 0.01) return;
+      const geo =
+        w.axis === 'x'
+          ? new THREE.BoxGeometry(len, h, thickness)
+          : new THREE.BoxGeometry(thickness, h, len);
+      const mesh = new THREE.Mesh(geo, mat);
+      const mid = (from + to) / 2;
+      if (w.axis === 'x') mesh.position.set(mid, (y0 + y1) / 2, w.at);
+      else mesh.position.set(w.at, (y0 + y1) / 2, mid);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      this.structure.add(mesh);
+    };
+    for (const s of this.wallSegments(w)) addBox(s.from, s.to, 0, w.height || WALL_HEIGHT);
+    // Lintels above every doorway.
+    for (const o of w.openings || []) addBox(o.min, o.max, o.height, w.height || WALL_HEIGHT);
+  }
+
+  addRoomSurfaces(rect) {
+    const w = rect.maxX - rect.minX;
+    const d = rect.maxZ - rect.minZ;
+    const cx = (rect.minX + rect.maxX) / 2;
+    const cz = (rect.minZ + rect.maxZ) / 2;
+    const tex = floorTexture();
+    tex.repeat.set(Math.max(1, w / 3), Math.max(1, d / 3));
+    const floor = new THREE.Mesh(
+      new THREE.PlaneGeometry(w, d),
+      new THREE.MeshStandardMaterial({ map: tex })
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.set(cx, 0.01, cz);
+    floor.receiveShadow = true;
+    this.structure.add(floor);
+    const ceil = new THREE.Mesh(
+      new THREE.PlaneGeometry(w, d),
+      new THREE.MeshBasicMaterial({ color: 0xe9eee8, side: THREE.DoubleSide })
+    );
+    ceil.rotation.x = Math.PI / 2;
+    ceil.position.set(cx, WALL_HEIGHT, cz);
+    this.structure.add(ceil);
+  }
+
   rebuildColliders() {
     const c = [
-      { minX: -12.5, maxX: 12.5, minZ: -12.4, maxZ: -11.6 },
-      { minX: -12.4, maxX: -11.6, minZ: -12, maxZ: 12.4 },
-      { minX: 11.6, maxX: 12.4, minZ: -12, maxZ: 12.4 },
-      { minX: -12.4, maxX: -2.5, minZ: 11.6, maxZ: 12.4 },
-      { minX: 2.5, maxX: 12.4, minZ: 11.6, maxZ: 12.4 },
+      // Front wall leaves the entrance open.
+      { minX: -12.5, maxX: -2.5, minZ: 11.6, maxZ: 12.4 },
+      { minX: 2.5, maxX: 12.5, minZ: 11.6, maxZ: 12.4 },
+      // Register, terminal and dumpster.
       { minX: 5.5, maxX: 8.5, minZ: 7.2, maxZ: 8.8 },
       { minX: -7.7, maxX: -6.3, minZ: 7.4, maxZ: 8.6 },
       { minX: -11.3, maxX: -8.7, minZ: 15.2, maxZ: 16.8 }
     ];
+    for (const w of this.walls) {
+      for (const s of this.wallSegments(w)) {
+        if (w.axis === 'x') {
+          c.push({ minX: s.from, maxX: s.to, minZ: w.at - 0.25, maxZ: w.at + 0.25 });
+        } else {
+          c.push({ minX: w.at - 0.25, maxX: w.at + 0.25, minZ: s.from, maxZ: s.to });
+        }
+      }
+    }
+    // Add fixture colliders
+    for (const fx of this.game.runtime.fixtures || []) {
+      if (fx.type === 'sign' || fx.type === 'storage') continue;
+      // approximate from type
+      const map = { counter: [2.6, 1.0], plant: [0.8, 0.8], bench: [2.0, 0.7] };
+      const sz = map[fx.type] || [1, 1];
+      const w = sz[0],
+        d = sz[1];
+      const rot = fx.rot || 0;
+      const rw = Math.abs(Math.sin(rot)) > 0.7 ? d : w;
+      const rd = Math.abs(Math.sin(rot)) > 0.7 ? w : d;
+      c.push({
+        minX: fx.x - rw / 2,
+        maxX: fx.x + rw / 2,
+        minZ: fx.z - rd / 2,
+        maxZ: fx.z + rd / 2
+      });
+    }
     for (const sh of this.game.runtime.shelves) {
-      const [x, z] = this.game.spot(sh.spot);
-      c.push({ minX: x - 1.1, maxX: x + 1.1, minZ: z - 0.5, maxZ: z + 0.5 });
+      const r = shelfRect(sh);
+      if (r)
+        c.push({
+          minX: r.minX - 0.05,
+          maxX: r.maxX + 0.05,
+          minZ: r.minZ - 0.05,
+          maxZ: r.maxZ + 0.05
+        });
     }
     this.colliders = c;
+    this.storeColliders = c; // for nav
   }
 
   collides(x, z) {
@@ -337,6 +504,11 @@ export default class StoreWorld {
     return this.colliders.some(
       (c) => x + r > c.minX && x - r < c.maxX && z + r > c.minZ && z - r < c.maxZ
     );
+  }
+
+  isInsideStore(x, z, level, padding = 0.2) {
+    const lvl = level ?? this.game?.state?.level ?? 1;
+    return buildInsideStore(x, z, lvl, padding);
   }
 
   setStoreName(name) {

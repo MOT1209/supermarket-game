@@ -18,7 +18,7 @@ const MOVEMENT_KEYS = new Set([
   'arrowleft',
   'arrowright'
 ]);
-const ACTION_KEYS = new Set(['e', 'q', 'l']);
+const ACTION_KEYS = new Set(['e', 'q', 'l', 'b', 'm', 'r', 'x']);
 
 export default class Input {
   constructor(game) {
@@ -84,9 +84,15 @@ export default class Input {
 
     if (e.repeat || this.game.mode !== 'playing') return;
     if (!ACTION_KEYS.has(k)) return;
-    if (k === 'e') this.game.onInteract();
-    else if (k === 'q') this.game.onDrop();
+    if (k === 'e') {
+      if (this.game.buildSystem?.enabled) this.game.buildSystem.confirmPlace();
+      else this.game.onInteract();
+    } else if (k === 'q') this.game.onDrop();
     else if (k === 'l' && this.wantsPointerLock && !this.locked) this.requestLock();
+    else if (k === 'b') this.game.buildSystem?.toggle();
+    else if (k === 'r') { if (this.game.buildSystem?.enabled) this.game.buildSystem.rotate(); }
+    else if (k === 'x') { if (this.game.buildSystem?.enabled) this.game.buildSystem.cancel(); }
+    else if (k === 'm') this.game.ui?.toggleCityUI?.();
   }
 
   onKeyUp(e) {

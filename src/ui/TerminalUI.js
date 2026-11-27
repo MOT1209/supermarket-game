@@ -1,4 +1,5 @@
 import { PRODUCTS, LICENSES, maxSpots, WAGE_RESTOCKER, WAGE_CASHIER } from '../data/products.js';
+import { MAX_STORE_LEVEL } from '../data/build.js';
 import { money, rounded } from '../utils/math.js';
 import {
   orderBox,
@@ -84,10 +85,12 @@ export default class TerminalUI {
     } else if (tab === 'build') {
       const max = maxSpots(g.state.level),
         used = g.state.shelves.length;
-      h = `<h2>Build & Expand</h2><p>Shelf / fridge capacity: <b>12 items</b>. Store level <b>${g.state.level}</b> — ${used}/${max} spots used.</p>
+      const atMax = g.state.level >= MAX_STORE_LEVEL;
+      const expandCost = 400 * g.state.level;
+      h = `<h2>Build & Expand</h2><p>Each shelf holds <b>12 items</b>. Store level <b>${g.state.level}</b> / ${MAX_STORE_LEVEL} — ${used}/${max} spots used.</p>
         <div class="row"><button class="btn" data-build="shelf" ${used >= max || g.state.cash < 150 ? 'disabled' : ''}>＋ Shelf ($150)</button>
         <button class="btn" data-build="fridge" ${used >= max || g.state.cash < 280 ? 'disabled' : ''}>＋ Refrigerator ($280)</button>
-        <button class="btn alt" data-expand="1" ${g.state.cash < 400 * g.state.level ? 'disabled' : ''}>🏬 Expand Store (${money(400 * g.state.level)}) — +4 spots</button></div>
+        <button class="btn alt" data-expand="1" ${atMax || g.state.cash < expandCost ? 'disabled' : ''}>${atMax ? '🏬 Fully expanded (level 7)' : `🏬 Expand Store (${money(expandCost)}) — +4 spots`}</button></div>
         <h2>Placed shelves</h2>`;
       g.state.shelves.forEach((sh) => {
         h += `<div class="stat"><span>${PRODUCTS[sh.productId].name} ${sh.fridge ? '(fridge)' : ''} — spot ${sh.spot + 1}</span><span>stock ${sh.stock}</span></div>`;

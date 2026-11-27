@@ -4,6 +4,7 @@ import { rounded } from '../utils/math.js';
 import { shelfPrompt, refreshShelfVisual } from '../world/ShelfFactory.js';
 import { convertToTrash, removeBox, updateBoxLabel } from './DeliverySystem.js';
 import { waitingCustomer } from '../entities/Customer.js';
+import { BUSINESSES } from '../data/businesses.js';
 
 const raycaster = new THREE.Raycaster();
 const dir = new THREE.Vector3();
@@ -67,6 +68,16 @@ export function interact(game) {
     b.group.rotation.set(0, 0, 0);
     game.world.interactables = game.world.interactables.filter((x) => x !== b.group);
     game.audio.play('pick');
+    return;
+  }
+
+  if (it.type === 'business') {
+    const bid = o.userData?.interact?.businessId;
+    if (bid && BUSINESSES[bid]) {
+      game.ui.shopUI?.show?.(bid);
+    } else {
+      game.ui.toast('This shop is closed.');
+    }
     return;
   }
 

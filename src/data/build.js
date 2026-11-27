@@ -7,6 +7,9 @@ import { PRODUCTS, SHELF_CAPACITY, SHELF_ROTATIONS, SHELF_SPOTS, maxSpots } from
 // rectangular room. The walls between the new room and the existing floor are
 // removed so the whole store remains walkable.
 export const BUILD_GRID = 0.5;
+export const WALL_HEIGHT = 5;
+export const DOOR_WIDTH = 4;
+export const DOOR_HEIGHT = 3.2;
 
 export const STORE_BASE = Object.freeze({
   id: 'sales_floor',
@@ -70,6 +73,32 @@ export function unlockedExpansions(level) {
 
 export function storeFloors(level) {
   return [STORE_BASE, ...unlockedExpansions(level).map((e) => e.rect)];
+}
+
+// The doorway an expansion needs in the wall it shares with the already-built
+// store. `axis` is the direction the wall runs along; `at` is the constant
+// coordinate of that wall.
+export function expansionDoorway(expansion) {
+  if (!expansion || !expansion.rect) return null;
+  const r = expansion.rect;
+  if (expansion.wall === 'back') {
+    const cx = (r.minX + r.maxX) / 2;
+    return {
+      axis: 'x',
+      at: r.maxZ,
+      min: cx - DOOR_WIDTH / 2,
+      max: cx + DOOR_WIDTH / 2,
+      height: DOOR_HEIGHT
+    };
+  }
+  const cz = (r.minZ + r.maxZ) / 2;
+  return {
+    axis: 'z',
+    at: expansion.wall === 'right' ? r.minX : r.maxX,
+    min: cz - DOOR_WIDTH / 2,
+    max: cz + DOOR_WIDTH / 2,
+    height: DOOR_HEIGHT
+  };
 }
 
 export function insideRect(x, z, r, padding = 0) {
@@ -278,8 +307,7 @@ export function nextFreeSpot(level, shelves) {
     if (!insideStore(x, z, level, 0.4)) continue;
     if (!used.has(i)) return i;
   }
-  // Any physically free spot is better than failing an automatic purchase.
-  for (let i = 0; i < SHELF_SPOTS.length; i++) if (!used.has(i)) return i;
+  // Never fall through to spots the current level has not unlocked.
   return -1;
 }
 

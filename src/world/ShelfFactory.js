@@ -1,7 +1,8 @@
 import * as THREE from 'three';
-import { PRODUCTS, SHELF_SPOTS } from '../data/products.js';
+import { PRODUCTS } from '../data/products.js';
 import { labelTexture } from '../utils/textures.js';
 import { preloadModels } from '../utils/AssetLoader.js';
+import { shelfPosition } from '../data/build.js';
 
 // Geometry + material are shared per product, so refreshing a shelf never
 // allocates (or leaks) GPU resources. Product meshes are cheap clones.
@@ -114,13 +115,16 @@ export function refreshShelfVisual(spot, group, shd, game) {
 }
 
 export function createShelfMesh(shd, game) {
-  const [x, z] = SHELF_SPOTS[shd.spot];
+  const pos = shelfPosition(shd);
   const g = new THREE.Group();
-  g.position.set(x, 0, z);
+  g.position.set(pos.x, 0, pos.z);
+  g.rotation.y = pos.rot || 0;
+  const isFreezer = !!shd.freezer;
+  const isFridge = !!shd.fridge || isFreezer;
   const frameMat = new THREE.MeshStandardMaterial({
-    color: shd.fridge ? 0x9fb7c4 : 0x8a6b4a,
+    color: isFreezer ? 0x7fb7d4 : isFridge ? 0x9fb7c4 : 0x8a6b4a,
     roughness: 0.7,
-    metalness: shd.fridge ? 0.3 : 0
+    metalness: isFridge ? 0.35 : 0
   });
   const sideGeo = new THREE.BoxGeometry(0.12, 2.4, 0.9);
   const s1 = new THREE.Mesh(sideGeo, frameMat);
@@ -138,10 +142,14 @@ export function createShelfMesh(shd, game) {
   const back = new THREE.Mesh(new THREE.BoxGeometry(2.1, 2.4, 0.08), frameMat);
   back.position.set(0, 1.2, -0.45);
   g.add(back);
-  if (shd.fridge) {
+  if (isFridge) {
     const gl = new THREE.Mesh(
       new THREE.BoxGeometry(2.0, 1.55, 0.05),
-      new THREE.MeshStandardMaterial({ color: 0xbfe6f5, transparent: true, opacity: 0.18 })
+      new THREE.MeshStandardMaterial({
+        color: isFreezer ? 0xaee7ff : 0xbfe6f5,
+        transparent: true,
+        opacity: isFreezer ? 0.28 : 0.18
+      })
     );
     gl.position.set(0, 1.3, 0.48);
     g.add(gl);
@@ -149,7 +157,7 @@ export function createShelfMesh(shd, game) {
   const label = new THREE.Mesh(
     new THREE.PlaneGeometry(1.8, 0.45),
     new THREE.MeshBasicMaterial({
-      map: labelTexture(PRODUCTS[shd.productId].name, PRODUCTS[shd.productId].color)
+      map: labelTexture(PRODUCTS[shd.productId]?.name || 'Shelf', PRODUCTS[shd.productId]?.color || 0x888888)
     })
   );
   label.position.set(0, 2.62, 0.2);

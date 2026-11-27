@@ -36,6 +36,7 @@ export function buildAnalytics(state, stats = null, extra = {}) {
     recycled: Math.round(sum(rows, 'recycle') / RECYCLE_BONUS),
     avgNet: completed.length ? rounded(sum(completed, 'net') / completed.length) : 0,
     bestDay: best ? { day: best.day, net: best.net } : null,
-    last7: rows.slice(-7)
+    last7: rows.slice(-7),
+    buildCost: rounded(sum(rows, 'buildCost'))
   };
 }

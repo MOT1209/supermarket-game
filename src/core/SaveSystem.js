@@ -13,6 +13,7 @@ import {
 import {
   BUILD_CATALOG,
   FIXTURE_TYPES,
+  MAX_STORE_LEVEL,
   insideStore,
   normalizeRotation,
   snap
@@ -104,6 +105,7 @@ function safeHistory(saved) {
       if (Number.isFinite(r.wages)) row.wages = safeNumber(r.wages, 0, 0, 1e12);
       if (Number.isFinite(r.upkeep)) row.upkeep = safeNumber(r.upkeep, 0, 0, 1e12);
       if (Number.isFinite(r.bonus)) row.bonus = safeNumber(r.bonus, 0, 0, 1e12);
+      if (Number.isFinite(r.buildCost)) row.buildCost = safeNumber(r.buildCost, 0, 0, 1e12);
       return row;
     });
 }
@@ -164,7 +166,7 @@ export function migrate(data) {
 
   m.cash = rounded(safeNumber(m.cash, base.cash, 0, 1e12));
   m.day = Math.floor(safeNumber(m.day, base.day, 1, 100000));
-  m.level = Math.floor(safeNumber(m.level, base.level, 1, 7));
+  m.level = Math.floor(safeNumber(m.level, base.level, 1, MAX_STORE_LEVEL));
   m.clock = safeNumber(m.clock, 0, 0, 86400);
   m.lifetimeRevenue = safeNumber(m.lifetimeRevenue, 0, 0, 1e15);
   m.reputation = safeNumber(m.reputation, REPUTATION_START, 0, REPUTATION_MAX);
