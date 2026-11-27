@@ -24,7 +24,7 @@ import { ACHIEVEMENT_IDS } from '../systems/Achievements.js';
 const GRAPHICS_MODES = new Set(['low', 'medium', 'high']);
 const MAX_HISTORY = 60;
 const MAX_FIXTURES = 80;
-const BUSINESS_IDS = ['bakery', 'cafe', 'pharmacy'];
+const BUSINESS_IDS = ['bakery', 'cafe', 'pharmacy', 'clothing', 'electronics'];
 
 export function defaultState() {
   const prices = {};
@@ -58,7 +58,11 @@ export function defaultState() {
     sellPrices,
     shelves,
     fixtures: [],
-    businesses: { day: 1, offers: { bakery: {}, cafe: {}, pharmacy: {} } },
+    businesses: {
+      day: 1,
+      offers: { bakery: {}, cafe: {}, pharmacy: {}, clothing: {}, electronics: {} },
+      activities: { bakery: 0, cafe: 0, pharmacy: 0, clothing: 0, electronics: 0 }
+    },
     staff: { restocker: false, cashier: false },
     sensitivity: 0.0008,
     volume: 0.8,
@@ -137,7 +141,10 @@ function safeFixtures(saved, level) {
 function safeBusinesses(saved, day) {
   const root = saved && typeof saved === 'object' ? saved : {};
   const savedOffers = root.offers && typeof root.offers === 'object' ? root.offers : {};
+  const savedActivities =
+    root.activities && typeof root.activities === 'object' ? root.activities : {};
   const offers = {};
+  const activities = {};
   for (const id of BUSINESS_IDS) {
     const entry = savedOffers[id];
     const counts = {};
@@ -149,10 +156,12 @@ function safeBusinesses(saved, day) {
       }
     }
     offers[id] = counts;
+    activities[id] = Math.floor(safeNumber(savedActivities[id], 0, 0, 99));
   }
   return {
     day: Math.floor(safeNumber(root.day, day, 1, 100000)),
-    offers
+    offers,
+    activities
   };
 }
 

@@ -74,10 +74,29 @@ export function interact(game) {
   if (it.type === 'business') {
     const bid = o.userData?.interact?.businessId;
     if (bid && BUSINESSES[bid]) {
-      game.ui.shopUI?.show?.(bid);
+      game.ui.shopUI?.show?.(bid, 'counter');
     } else {
       game.ui.toast('This shop is closed.');
     }
+    return;
+  }
+
+  if (it.type === 'shopDoor') {
+    const bid = o.userData?.interact?.businessId;
+    if (bid) game.city?.shopWorld?.toggleDoor?.(bid);
+    return;
+  }
+
+  if (it.type === 'shopGame') {
+    const bid = o.userData?.interact?.businessId;
+    if (bid && BUSINESSES[bid]) {
+      game.ui.shopUI?.show?.(bid, 'activity');
+    }
+    return;
+  }
+
+  if (it.type === 'shopDisplay') {
+    game.ui.toast(it.info || 'The staff have arranged this display carefully.');
     return;
   }
 
@@ -123,7 +142,13 @@ export function updatePrompt(game, o) {
     return;
   }
   let txt = o.userData.interact.prompt;
-  if (o.userData.interact.type === 'shelf') {
+  const bid = o.userData.interact.businessId;
+  if (o.userData.interact.type === 'shopDoor') {
+    txt = game.city?.shopWorld?.doorPrompt?.(bid) || txt;
+  } else if (o.userData.interact.type === 'shopGame') {
+    const left = game.shopActivities?.remaining?.(bid);
+    if (Number.isFinite(left)) txt = `${txt} — ${left} shift${left === 1 ? '' : 's'} left`;
+  } else if (o.userData.interact.type === 'shelf') {
     const sh = game.runtime.shelves.find((s) => s.group === o);
     if (sh) txt = shelfPrompt(sh);
   } else if (o.userData.interact.type === 'box') {

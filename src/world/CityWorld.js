@@ -6,9 +6,20 @@ import {
   CITY_BOUNDS,
   MAIN_STREET,
   CROSS_STREETS,
+  INTERSECTIONS,
+  CROSSINGS,
   SIDEWALKS,
   PARKING_LOT,
   CITY_PARK,
+  POCKET_PARK,
+  PLAZA,
+  LOT_PATH,
+  PARK_LINK,
+  POCKET_PARK_LINK,
+  ACCESSIBLE_BAYS,
+  EV_CHARGER,
+  CART_RETURN,
+  STORE_LANDMARK,
   BUILDING_PLACEMENTS,
   STREETLIGHTS,
   TREES,
@@ -18,9 +29,13 @@ import {
   HYDRANTS,
   PARKED_CARS,
   TRAFFIC_LIGHTS,
-  CITY_PROPS
+  CITY_PROPS,
+  trafficPhase,
+  isWalkableGround
 } from '../data/city.js';
-import { BUSINESSES, BUSINESS_LIST } from '../data/businesses.js';
+import { BUSINESSES } from '../data/businesses.js';
+import ShopWorld from './ShopWorld.js';
+import { NavGrid } from '../systems/Navigation.js';
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
@@ -104,6 +119,80 @@ function sidewalkTexture() {
   );
 }
 
+function brickTexture() {
+  return makeCanvas(
+    (x, w, h) => {
+      x.fillStyle = '#a98570';
+      x.fillRect(0, 0, w, h);
+      const bw = 64;
+      const bh = 32;
+      for (let row = 0; row < h / bh; row++) {
+        for (let col = -1; col < w / bw; col++) {
+          const offset = row % 2 ? bw / 2 : 0;
+          const shade = 150 + Math.floor(Math.random() * 30);
+          x.fillStyle = `rgb(${shade + 18},${shade - 8},${shade - 34})`;
+          x.fillRect(col * bw + offset + 3, row * bh + 3, bw - 6, bh - 6);
+        }
+      }
+    },
+    256,
+    256
+  );
+}
+
+function landmarkTexture() {
+  return makeCanvas(
+    (x, w, h) => {
+      x.fillStyle = '#0f3f24';
+      x.fillRect(0, 0, w, h);
+      x.strokeStyle = '#d8f0b0';
+      x.lineWidth = 10;
+      x.strokeRect(16, 16, w - 32, h - 32);
+      x.fillStyle = '#8fd6a2';
+      x.beginPath();
+      x.ellipse(w / 2, h * 0.2, 74, 40, -0.5, 0, Math.PI * 2);
+      x.fill();
+      x.fillStyle = '#f4ffe9';
+      x.textAlign = 'center';
+      x.font = 'bold 150px Arial';
+      x.fillText('FRESH', w / 2, h * 0.42);
+      x.fillText('MART', w / 2, h * 0.58);
+      x.font = 'bold 52px Arial';
+      x.fillStyle = '#d8f0b0';
+      x.fillText('GROCERIES', w / 2, h * 0.72);
+      x.font = 'bold 40px Arial';
+      x.fillText('OPEN 24/7', w / 2, h * 0.84);
+    },
+    420,
+    1024
+  );
+}
+
+function accessMarkTexture() {
+  return makeCanvas(
+    (x, w, h) => {
+      x.clearRect(0, 0, w, h);
+      x.fillStyle = '#ffffff';
+      x.beginPath();
+      x.arc(w * 0.42, h * 0.26, w * 0.1, 0, Math.PI * 2);
+      x.fill();
+      x.lineWidth = w * 0.09;
+      x.strokeStyle = '#ffffff';
+      x.beginPath();
+      x.moveTo(w * 0.42, h * 0.36);
+      x.lineTo(w * 0.42, h * 0.6);
+      x.lineTo(w * 0.66, h * 0.6);
+      x.lineTo(w * 0.74, h * 0.8);
+      x.stroke();
+      x.beginPath();
+      x.arc(w * 0.5, h * 0.66, w * 0.2, 0, Math.PI * 2);
+      x.stroke();
+    },
+    256,
+    256
+  );
+}
+
 function grassTexture() {
   return makeCanvas(
     (x, w, h) => {
@@ -134,82 +223,6 @@ function parkPathTexture() {
   );
 }
 
-function shopSignTexture(business) {
-  return makeCanvas(
-    (x, w, h) => {
-      x.fillStyle = business.signColor;
-      x.fillRect(0, 0, w, h);
-      x.strokeStyle = 'rgba(255,255,255,.75)';
-      x.lineWidth = 10;
-      x.strokeRect(14, 14, w - 28, h - 28);
-      x.fillStyle = '#fff7e8';
-      x.textAlign = 'center';
-      x.textBaseline = 'middle';
-      let size = 92;
-      x.font = `bold ${size}px Georgia, serif`;
-      while (x.measureText(business.name).width > w - 70 && size > 34) {
-        size -= 4;
-        x.font = `bold ${size}px Georgia, serif`;
-      }
-      x.fillText(business.name, w / 2, h / 2 - 6);
-      x.font = 'bold 26px Arial';
-      x.fillStyle = 'rgba(255,255,255,.8)';
-      x.fillText(business.tagline.slice(0, 54), w / 2, h / 2 + 54);
-    },
-    1024,
-    256
-  );
-}
-
-function shopFloorTexture(color) {
-  return makeCanvas(
-    (x, w, h) => {
-      x.fillStyle = color;
-      x.fillRect(0, 0, w, h);
-      x.strokeStyle = 'rgba(0,0,0,.12)';
-      x.lineWidth = 4;
-      for (let i = 0; i <= w; i += 64) {
-        x.beginPath();
-        x.moveTo(i, 0);
-        x.lineTo(i, h);
-        x.stroke();
-        x.beginPath();
-        x.moveTo(0, i);
-        x.lineTo(w, i);
-        x.stroke();
-      }
-    },
-    256,
-    256
-  );
-}
-
-function shopMenuTexture(business) {
-  return makeCanvas(
-    (x, w, h) => {
-      x.fillStyle = '#20301f';
-      x.fillRect(0, 0, w, h);
-      x.strokeStyle = '#d9c79a';
-      x.lineWidth = 8;
-      x.strokeRect(12, 12, w - 24, h - 24);
-      x.fillStyle = '#f8eccb';
-      x.font = 'bold 48px Georgia, serif';
-      x.textAlign = 'center';
-      x.fillText(business.shortName, w / 2, 82);
-      x.font = '28px Arial';
-      const lines = business.offers.slice(0, 3).map((o) => o.label);
-      lines.forEach((line, i) => {
-        x.fillStyle = '#e7d6a8';
-        x.fillText(line, w / 2, 150 + i * 52);
-        x.fillStyle = '#d9b65a';
-        x.fillText('•', 34, 150 + i * 52);
-      });
-    },
-    512,
-    320
-  );
-}
-
 export default class CityWorld {
   constructor(game) {
     this.game = game;
@@ -217,11 +230,13 @@ export default class CityWorld {
     this.group.name = 'city';
     this.colliders = [];
     this.shops = new Map();
+    this.shopWorld = null;
     this.trafficLights = [];
     this.cullGroups = [];
     this.shopLights = [];
     this.waypoint = null;
     this.waypointBeacon = null;
+    this.nav = null;
     this.fallbacks = new Map();
     this.assetJobs = [];
     this.materials = {
@@ -252,15 +267,21 @@ export default class CityWorld {
     this.buildSidewalks();
     this.buildParking();
     this.buildPark();
+    this.buildPocketPark();
     this.buildBuildings();
     this.buildShops();
     this.buildProps();
+    this.buildPlaza();
+    this.buildLandmark();
+    this.buildAccessibleParking();
     this.buildWaypoint();
     this.registerCullGroups();
+    this.buildNav();
   }
 
   collides(x, z, radius = 0.38) {
     for (const c of this.colliders) {
+      if (c.disabled) continue;
       const nx = clamp(x, c.minX, c.maxX);
       const nz = clamp(z, c.minZ, c.maxZ);
       const dx = x - nx;
@@ -280,13 +301,15 @@ export default class CityWorld {
   }
 
   addCollider(minX, maxX, minZ, maxZ) {
-    this.colliders.push({ minX, maxX, minZ, maxZ });
+    const collider = { minX, maxX, minZ, maxZ };
+    this.colliders.push(collider);
+    return collider;
   }
 
   setWaypoint(businessId) {
     const b = BUSINESSES[businessId];
     if (!b || !this.waypointBeacon) return false;
-    this.waypoint = { businessId, x: b.entrance.x, z: b.entrance.z + 1.4 };
+    this.waypoint = { businessId, x: b.entrance.x, z: b.entrance.z - 1.6 };
     this.waypointBeacon.position.set(this.waypoint.x, 0, this.waypoint.z);
     this.waypointBeacon.visible = true;
     return true;
@@ -307,6 +330,8 @@ export default class CityWorld {
   }
 
   update(dt, time) {
+    this.updateSignals(time);
+    this.shopWorld?.update?.(dt, time);
     if (this.waypointBeacon?.visible) {
       this.waypointBeacon.rotation.y = time * 1.4;
       this.waypointBeacon.position.y = Math.sin(time * 2.2) * 0.18;
@@ -364,19 +389,37 @@ export default class CityWorld {
       }
     }
 
-    // Zebra crossings at both intersections.
-    const stripeGeo = new THREE.BoxGeometry(0.55, 0.02, 8.4);
-    stripeGeo.userData.shared = true;
-    for (const s of CROSS_STREETS) {
-      for (let i = 0; i < 5; i++) {
-        const z = MAIN_STREET.minZ + 0.9 + i * 1.85;
-        const left = new THREE.Mesh(stripeGeo, dashMat);
-        left.position.set(s.minX - 3.1, 0.035, z);
-        this.group.add(left);
-        const right = new THREE.Mesh(stripeGeo, dashMat);
-        right.position.set(s.maxX + 3.1, 0.035, z);
-        this.group.add(right);
+    // Zebra crossings on all four arms of every intersection. Bars run across
+    // the walking direction, which is what makes them read as a crossing.
+    for (const c of CROSSINGS) {
+      const acrossX = c.maxX - c.minX;
+      const acrossZ = c.maxZ - c.minZ;
+      if (c.axis === 'x') {
+        const count = Math.max(3, Math.floor(acrossX / 1.1));
+        for (let i = 0; i < count; i++) {
+          const bar = new THREE.Mesh(unitBoxGeometry(), dashMat);
+          bar.scale.set(0.5, 0.02, acrossZ * 0.78);
+          bar.position.set(c.minX + 0.8 + i * 1.1, 0.035, (c.minZ + c.maxZ) / 2);
+          this.group.add(bar);
+        }
+      } else {
+        const count = Math.max(3, Math.floor(acrossZ / 1.1));
+        for (let i = 0; i < count; i++) {
+          const bar = new THREE.Mesh(unitBoxGeometry(), dashMat);
+          bar.scale.set(acrossX * 0.78, 0.02, 0.5);
+          bar.position.set((c.minX + c.maxX) / 2, 0.035, c.minZ + 0.8 + i * 1.1);
+          this.group.add(bar);
+        }
       }
+    }
+
+    // Stop bars so drivers (and the traffic system) have a clear place to wait.
+    const stopMat = sharedBasic(0xe8e2c8);
+    for (const it of INTERSECTIONS) {
+      this.group.add(box(0.45, 0.02, 4.4, stopMat, it.minX - 1.8, 0.034, 22.5));
+      this.group.add(box(0.45, 0.02, 4.4, stopMat, it.maxX + 1.8, 0.034, 27.5));
+      this.group.add(box(4.0, 0.02, 0.45, stopMat, it.centerX - 2, 0.034, it.minZ - 1.8));
+      this.group.add(box(4.0, 0.02, 0.45, stopMat, it.centerX + 2, 0.034, it.maxZ + 1.8));
     }
   }
 
@@ -387,11 +430,17 @@ export default class CityWorld {
       const d = s.maxZ - s.minZ;
       this.group.add(plane(w, d, mat, (s.minX + s.maxX) / 2, 0.04, (s.minZ + s.maxZ) / 2));
     }
-    // Curb strips make the road edge readable.
+    // Curbs stop at each cross street for the same reason the sidewalks do.
     const curbMat = sharedMaterial(0x9a978c, { roughness: 0.9 });
-    const addCurb = (x, z, w, d) => this.group.add(box(w, 0.14, d, curbMat, x, 0.07, z));
-    addCurb(0, 19.95, 160, 0.18);
-    addCurb(0, 30.05, 160, 0.18);
+    for (const [minX, maxX] of [
+      [-80, -44],
+      [-36, 36],
+      [44, 80]
+    ]) {
+      const w = maxX - minX;
+      this.group.add(box(w, 0.14, 0.18, curbMat, (minX + maxX) / 2, 0.07, 19.95));
+      this.group.add(box(w, 0.14, 0.18, curbMat, (minX + maxX) / 2, 0.07, 30.05));
+    }
   }
 
   buildParking() {
@@ -440,6 +489,18 @@ export default class CityWorld {
     rim.rotation.x = -Math.PI / 2;
     rim.position.set(cx - 3, 0.08, cz - 6);
     this.group.add(rim);
+
+    // Paved link from the park to the sidewalk, so walkers have a route in.
+    this.group.add(
+      plane(
+        PARK_LINK.maxX - PARK_LINK.minX,
+        PARK_LINK.maxZ - PARK_LINK.minZ,
+        path,
+        (PARK_LINK.minX + PARK_LINK.maxX) / 2,
+        0.05,
+        (PARK_LINK.minZ + PARK_LINK.maxZ) / 2
+      )
+    );
   }
 
   // -------------------------------------------------------------------------
@@ -447,51 +508,65 @@ export default class CityWorld {
   // -------------------------------------------------------------------------
   buildBuildings() {
     for (const p of BUILDING_PLACEMENTS) {
-      const fallback = this.makeBuildingFallback(p);
-      this.group.add(fallback);
-      this.fallbacks.set(`building_${p.x}_${p.z}`, fallback);
+      // One LOD group per placement: the shared GLB module up close and a cheap
+      // procedural block far away, so the skyline never costs full detail.
+      const lod = new THREE.LOD();
+      lod.name = `building_${p.x}_${p.z}`;
+      lod.position.set(p.x, 0, p.z);
+      lod.rotation.y = p.rot;
+      lod.addLevel(this.makeBuildingFallback(p), p.lodFar ?? 95);
+      this.group.add(lod);
+      this.fallbacks.set(lod.name, lod);
       this.addCollider(p.x - p.w / 2, p.x + p.w / 2, p.z - p.d / 2, p.z + p.d / 2);
       this.assetJobs.push(
         cloneModel(p.file).then((model) => {
           if (!model) return;
-          model.position.set(p.x, 0, p.z);
-          model.rotation.y = p.rot;
+          const bounds = new THREE.Box3().setFromObject(model);
+          const size = bounds.getSize(new THREE.Vector3());
+          // Modular GLBs are authored once and reused at several footprints.
+          const sx = size.x > 0.01 ? p.w / size.x : 1;
+          const sy = size.y > 0.01 ? p.h / size.y : 1;
+          const sz = size.z > 0.01 ? p.d / size.z : 1;
+          model.scale.set(sx, sy, sz);
+          model.position.set(
+            -((bounds.min.x + bounds.max.x) / 2) * sx,
+            -bounds.min.y * sy,
+            -((bounds.min.z + bounds.max.z) / 2) * sz
+          );
           model.traverse((o) => {
             if (o.isMesh) {
               o.castShadow = true;
               o.receiveShadow = true;
             }
           });
-          this.group.add(model);
-          this.group.remove(fallback);
-          disposeObject3D(fallback);
-          this.fallbacks.delete(`building_${p.x}_${p.z}`);
+          lod.addLevel(model, 0);
         })
       );
     }
   }
 
+  // Local-space block used as the far LOD and as the fallback when a modular
+  // GLB is missing. Window bands keep it to four boxes per floor.
   makeBuildingFallback(p) {
     const g = new THREE.Group();
     const mat = sharedMaterial(p.color, { roughness: 0.85 });
-    g.add(box(p.w, p.h, p.d, mat, p.x, p.h / 2, p.z));
+    g.add(box(p.w, p.h, p.d, mat, 0, p.h / 2, 0));
+    const plinth = sharedMaterial(0x9c9a90, { roughness: 0.92 });
+    g.add(box(p.w + 0.12, 2.4, p.d + 0.12, plinth, 0, 1.2, 0));
     const roof = sharedMaterial(0x4d5355, { roughness: 0.95 });
-    g.add(box(p.w + 0.2, 0.4, p.d + 0.2, roof, p.x, p.h + 0.2, p.z));
+    g.add(box(p.w + 0.2, 0.4, p.d + 0.2, roof, 0, p.h + 0.2, 0));
+    if (p.h > 14) {
+      const capMat = sharedMaterial(0x6f7a80, { roughness: 0.9 });
+      g.add(box(p.w * 0.4, 1.4, p.d * 0.4, capMat, 0, p.h + 1.0, 0));
+    }
     const winMat = sharedBasic(0x3b596b);
-    const winGeo = new THREE.BoxGeometry(0.8, 1.1, 0.06);
-    winGeo.userData.shared = true;
-    const rows = Math.max(1, Math.floor((p.h - 3) / 3));
-    const cols = Math.max(2, Math.floor(p.w / 2.4));
+    const rows = Math.max(1, Math.floor((p.h - 4) / 3));
     for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        const win = new THREE.Mesh(winGeo, winMat);
-        win.position.set(
-          p.x - p.w / 2 + 1.3 + c * ((p.w - 2.6) / Math.max(1, cols - 1)),
-          3 + r * 3,
-          p.z - p.d / 2 - 0.04
-        );
-        g.add(win);
-      }
+      const y = 4 + r * 3;
+      g.add(box(p.w - 1.4, 0.9, 0.08, winMat, 0, y, -p.d / 2 - 0.02));
+      g.add(box(p.w - 1.4, 0.9, 0.08, winMat, 0, y, p.d / 2 + 0.02));
+      g.add(box(0.08, 0.9, p.d - 1.4, winMat, -p.w / 2 - 0.02, y, 0));
+      g.add(box(0.08, 0.9, p.d - 1.4, winMat, p.w / 2 + 0.02, y, 0));
     }
     return g;
   }
@@ -500,219 +575,9 @@ export default class CityWorld {
   // Functional neighbour shops
   // -------------------------------------------------------------------------
   buildShops() {
-    for (const b of BUSINESS_LIST) {
-      const shop = { business: b, group: new THREE.Group(), lights: [] };
-      shop.group.position.set(b.entrance.x, 0, b.entrance.z);
-      this.group.add(shop.group);
-      this.shops.set(b.id, shop);
-
-      const fallback = this.makeShopFallback();
-      shop.group.add(fallback);
-      shop.fallback = fallback;
-      this.assetJobs.push(
-        cloneModel('city/shop_shell.glb').then((model) => {
-          if (!model) return;
-          model.position.set(0, 0, 6);
-          model.rotation.y = Math.PI;
-          model.traverse((o) => {
-            if (o.isMesh) {
-              o.castShadow = true;
-              o.receiveShadow = true;
-            }
-          });
-          shop.group.add(model);
-          shop.group.remove(fallback);
-          disposeObject3D(fallback);
-          shop.fallback = null;
-        })
-      );
-
-      this.buildShopInterior(b, shop);
-      this.buildShopFacade(b, shop);
-      this.addShopColliders(b);
-    }
-  }
-
-  makeShopFallback() {
-    const g = new THREE.Group();
-    const wall = this.materials.wall;
-    const roof = this.materials.roof;
-    // Local space: entrance is at z=0, the shop extends away from the street.
-    g.add(box(14, 4.6, 0.35, wall, 0, 2.3, 11.8));
-    g.add(box(0.35, 4.6, 12, wall, -6.85, 2.3, 6));
-    g.add(box(0.35, 4.6, 12, wall, 6.85, 2.3, 6));
-    g.add(box(5.5, 4.6, 0.35, wall, -4.25, 2.3, 0.15));
-    g.add(box(5.5, 4.6, 0.35, wall, 4.25, 2.3, 0.15));
-    g.add(box(3, 2, 0.35, wall, 0, 3.6, 0.15));
-    g.add(box(14.4, 0.35, 12.4, roof, 0, 4.78, 6));
-    g.add(box(14, 0.2, 12, this.materials.wallDark, 0, 0.1, 6));
-    return g;
-  }
-
-  buildShopInterior(b, shop) {
-    const floorMat = sharedMaterial(0xffffff, {
-      map: shopFloorTexture(
-        b.id === 'cafe' ? '#8a6a4a' : b.id === 'bakery' ? '#b28a5a' : '#8a9a9a'
-      ),
-      roughness: 0.92
-    });
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(13.2, 11.2), floorMat);
-    floor.rotation.x = -Math.PI / 2;
-    floor.position.set(0, 0.22, 6);
-    floor.receiveShadow = true;
-    shop.group.add(floor);
-
-    const counterMat = sharedMaterial(b.accent, { roughness: 0.7 });
-    const topMat = sharedMaterial(b.color, { roughness: 0.6 });
-    const counter = new THREE.Group();
-    counter.add(box(3.4, 1.0, 0.9, counterMat, 0, 0.5, 0));
-    counter.add(box(3.6, 0.12, 1.05, topMat, 0, 1.06, 0));
-    counter.position.set(b.counter.x - b.entrance.x, 0.22, b.counter.z - b.entrance.z);
-    shop.group.add(counter);
-    shop.counter = counter;
-    this.game.world.tagInteract(counter, 'business', `Talk to ${b.shortName} — browse offers`);
-    counter.userData.interact.businessId = b.id;
-
-    // Back-wall shelves / display units.
-    const shelfMat = sharedMaterial(0x5c4a38, { roughness: 0.88 });
-    const goods = [b.color, b.awning, 0xd8c49a, 0x8fb3c4];
-    for (let i = 0; i < 5; i++) {
-      const x = -4.6 + i * 2.3;
-      const z = 10.4;
-      shop.group.add(box(1.8, 2.1, 0.55, shelfMat, x, 1.27, z));
-      for (let row = 0; row < 2; row++) {
-        shop.group.add(
-          box(
-            1.5,
-            0.22,
-            0.4,
-            sharedMaterial(goods[(i + row) % goods.length]),
-            x,
-            0.75 + row * 0.7,
-            z + 0.02
-          )
-        );
-      }
-    }
-
-    // Side display counters.
-    shop.group.add(box(0.7, 1.1, 5.2, shelfMat, -5.9, 0.77, 6.4));
-    shop.group.add(box(0.7, 1.1, 5.2, shelfMat, 5.9, 0.77, 6.4));
-
-    // Cafe seating / bakery baskets / pharmacy display.
-    if (b.id === 'cafe') {
-      for (const [tx, tz] of [
-        [-3.2, 4.1],
-        [3.2, 4.1]
-      ]) {
-        const table = new THREE.Group();
-        table.add(box(1.1, 0.1, 1.1, topMat, 0, 0.85, 0));
-        table.add(box(0.12, 0.75, 0.12, this.materials.metal, 0, 0.42, 0));
-        table.position.set(tx, 0.22, tz);
-        shop.group.add(table);
-        for (const dx of [-0.85, 0.85]) {
-          shop.group.add(box(0.5, 0.9, 0.5, sharedMaterial(0x3e4a42), tx + dx, 0.45, tz));
-        }
-      }
-    } else if (b.id === 'bakery') {
-      for (let i = 0; i < 3; i++) {
-        shop.group.add(box(1.1, 0.35, 0.7, sharedMaterial(0xd9a441), -4 + i * 1.3, 0.42, 3.3));
-      }
-    } else {
-      shop.group.add(box(2.4, 0.9, 1.2, sharedMaterial(0xdfe8e6), -3.6, 0.68, 3.2));
-      shop.group.add(box(2.4, 0.9, 1.2, sharedMaterial(0xdfe8e6), 3.6, 0.68, 3.2));
-    }
-
-    // Keeper behind the counter, facing the street.
-    const keeper = this.makeKeeper(b);
-    keeper.position.set(b.keeper.x - b.entrance.x, 0.22, b.keeper.z - b.entrance.z);
-    keeper.rotation.y = Math.PI;
-    shop.group.add(keeper);
-
-    // Menu board on the back wall.
-    const menu = new THREE.Mesh(
-      new THREE.PlaneGeometry(3.2, 2),
-      new THREE.MeshBasicMaterial({ map: shopMenuTexture(b) })
-    );
-    menu.position.set(0, 3.1, 11.45);
-    menu.rotation.y = Math.PI;
-    shop.group.add(menu);
-
-    // Warm interior light, activated only near the shop.
-    const light = new THREE.PointLight(0xffd9a0, 0, 18, 2);
-    light.position.set(0, 3.5, 6);
-    shop.group.add(light);
-    this.shopLights.push({ light, x: b.entrance.x, z: b.entrance.z });
-    shop.light = light;
-  }
-
-  makeKeeper(b) {
-    const g = new THREE.Group();
-    const skin = sharedMaterial(0xd9a578);
-    const shirt = sharedMaterial(b.color);
-    const apron = sharedMaterial(b.accent);
-    const pants = sharedMaterial(0x2d3542);
-    g.add(box(0.55, 0.8, 0.32, shirt, 0, 1.25, 0));
-    g.add(box(0.6, 0.35, 0.34, apron, 0, 1.05, 0.02));
-    g.add(box(0.48, 0.7, 0.28, pants, 0, 0.45, 0));
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.21, 12, 10), skin);
-    head.position.set(0, 1.83, 0);
-    head.castShadow = true;
-    g.add(head);
-    const hair = new THREE.Mesh(
-      new THREE.SphereGeometry(0.215, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.6),
-      sharedMaterial(0x3a2a20)
-    );
-    hair.position.set(0, 1.85, -0.01);
-    g.add(hair);
-    g.add(box(0.18, 0.6, 0.16, shirt, -0.34, 1.2, 0));
-    g.add(box(0.18, 0.6, 0.16, shirt, 0.34, 1.2, 0));
-    return g;
-  }
-
-  buildShopFacade(b, shop) {
-    const sign = new THREE.Mesh(
-      new THREE.PlaneGeometry(7.4, 1.85),
-      new THREE.MeshBasicMaterial({ map: shopSignTexture(b) })
-    );
-    sign.position.set(0, 3.65, -0.16);
-    sign.rotation.y = Math.PI;
-    shop.group.add(sign);
-
-    const awningMat = sharedMaterial(b.awning, { roughness: 0.85 });
-    const awning = box(7.8, 0.18, 1.6, awningMat, 0, 2.95, -0.85);
-    awning.rotation.x = 0.12;
-    shop.group.add(awning);
-    for (let i = -3; i <= 3; i++) {
-      shop.group.add(box(0.08, 0.3, 1.5, this.materials.white, i * 1.1, 2.88, -0.9));
-    }
-
-    const mat = sharedMaterial(b.color, { roughness: 0.8 });
-    shop.group.add(box(0.45, 4.6, 0.45, mat, -6.6, 2.3, -0.2));
-    shop.group.add(box(0.45, 4.6, 0.45, mat, 6.6, 2.3, -0.2));
-  }
-
-  addShopColliders(b) {
-    // Walls (entrance gap x -1.5..1.5 at the front).
-    this.addCollider(b.building.minX, b.building.maxX, b.building.maxZ - 0.4, b.building.maxZ);
-    this.addCollider(b.building.minX, b.building.minX + 0.4, b.building.minZ, b.building.maxZ);
-    this.addCollider(b.building.maxX - 0.4, b.building.maxX, b.building.minZ, b.building.maxZ);
-    this.addCollider(b.building.minX, b.entrance.x - 1.5, b.building.minZ, b.building.minZ + 0.4);
-    this.addCollider(b.entrance.x + 1.5, b.building.maxX, b.building.minZ, b.building.minZ + 0.4);
-    // Counter and side displays.
-    this.addCollider(b.counter.x - 1.8, b.counter.x + 1.8, b.counter.z - 0.55, b.counter.z + 0.55);
-    this.addCollider(
-      b.building.minX + 0.3,
-      b.building.minX + 1.2,
-      b.building.minZ + 2,
-      b.building.maxZ - 1
-    );
-    this.addCollider(
-      b.building.maxX - 1.2,
-      b.building.maxX - 0.3,
-      b.building.minZ + 2,
-      b.building.maxZ - 1
-    );
+    this.shopWorld = new ShopWorld(this.game, this);
+    this.shopWorld.build();
+    this.shops = this.shopWorld.shops;
   }
 
   // -------------------------------------------------------------------------
@@ -999,7 +864,9 @@ export default class CityWorld {
     g.add(box(0.16, 3.2, 0.16, this.materials.metal, 0, 1.6, 0));
     g.add(box(0.5, 1.35, 0.4, this.materials.dark, 0, 3.25, 0));
     const mk = (color, y) => {
-      const mat = sharedBasic(color);
+      // Each lens owns its material so the signal can change without repainting
+      // every other light in the city.
+      const mat = new THREE.MeshBasicMaterial({ color });
       const lens = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), mat);
       lens.position.set(0, y, 0.21);
       g.add(lens);
@@ -1030,6 +897,263 @@ export default class CityWorld {
   // -------------------------------------------------------------------------
   // Waypoint and culling
   // -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // FRESH MART forecourt, landmark and accessible parking
+  // -------------------------------------------------------------------------
+  buildPlaza() {
+    const brick = sharedMaterial(0xffffff, { map: brickTexture(), roughness: 0.9 });
+    const w = PLAZA.maxX - PLAZA.minX;
+    const d = PLAZA.maxZ - PLAZA.minZ;
+    const cx = (PLAZA.minX + PLAZA.maxX) / 2;
+    const cz = (PLAZA.minZ + PLAZA.maxZ) / 2;
+    this.group.add(plane(w, d, brick, cx, 0.05, cz));
+    const curb = sharedMaterial(0x9a978c, { roughness: 0.9 });
+    this.group.add(box(w, 0.1, 0.2, curb, cx, 0.05, PLAZA.maxZ - 0.1));
+
+    // Benches sit on the kerb line only: furniture along the sides of the
+    // forecourt used to fence the plaza off from the sidewalk and left the
+    // walkers with no route out.
+    for (const [x, z, rot] of [
+      [-9.4, 18.6, 0],
+      [9.4, 18.6, 0]
+    ]) {
+      const bench = this.makeBenchFallback();
+      bench.position.set(x, 0, z);
+      bench.rotation.y = rot;
+      this.group.add(bench);
+      const alongX = Math.abs(Math.sin(rot)) < 0.5;
+      this.addCollider(
+        x - (alongX ? 1.1 : 0.5),
+        x + (alongX ? 1.1 : 0.5),
+        z - (alongX ? 0.5 : 1.1),
+        z + (alongX ? 0.5 : 1.1)
+      );
+    }
+    for (const [x, z] of [
+      [-6.2, 13.2],
+      [6.2, 13.2]
+    ]) {
+      this.group.add(this.makePlanterFallback(x, z));
+      this.addCollider(x - 0.55, x + 0.55, z - 0.55, z + 0.55);
+    }
+    this.buildCartReturn();
+  }
+
+  buildCartReturn() {
+    const g = new THREE.Group();
+    const metal = this.materials.metal;
+    g.add(box(2.4, 1.0, 0.12, metal, 0, 0.5, -0.5));
+    g.add(box(0.12, 1.0, 1.0, metal, -1.14, 0.5, 0));
+    g.add(box(0.12, 1.0, 1.0, metal, 1.14, 0.5, 0));
+    const cartMat = sharedMaterial(0x9aa6ad, { metalness: 0.4, roughness: 0.45 });
+    for (let i = 0; i < 5; i++) {
+      g.add(box(0.34, 0.5, 0.62, cartMat, -0.72 + i * 0.36, 0.42, 0.05));
+    }
+    g.position.set(CART_RETURN.x, 0, CART_RETURN.z);
+    g.rotation.y = CART_RETURN.rot;
+    this.group.add(g);
+    this.addCollider(
+      CART_RETURN.x - 0.75,
+      CART_RETURN.x + 0.75,
+      CART_RETURN.z - 1.15,
+      CART_RETURN.z + 1.15
+    );
+  }
+
+  buildLandmark() {
+    const L = STORE_LANDMARK.pylon;
+    const pylon = new THREE.Group();
+    pylon.add(box(L.w, 1.0, L.d + 0.2, sharedMaterial(0x2e3b33, { roughness: 0.8 }), 0, 0.5, 0));
+    pylon.add(
+      box(L.w - 0.2, L.h, L.d, sharedMaterial(0x1d5130, { roughness: 0.7 }), 0, L.h / 2 + 0.6, 0)
+    );
+    const face = new THREE.Mesh(
+      new THREE.PlaneGeometry(L.w - 0.3, L.h - 1.2),
+      new THREE.MeshBasicMaterial({ map: landmarkTexture(), side: THREE.DoubleSide })
+    );
+    face.position.set(0, L.h / 2 + 0.6, L.d / 2 + 0.02);
+    pylon.add(face);
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(L.w, 0.18, L.d + 0.1), sharedBasic(0xffe08a));
+    cap.position.y = L.h + 1.3;
+    pylon.add(cap);
+    pylon.position.set(L.x, 0, L.z);
+    this.group.add(pylon);
+    this.addCollider(L.x - L.w / 2, L.x + L.w / 2, L.z - L.d / 2, L.z + L.d / 2);
+
+    // Green flags mark the two ends of the forecourt.
+    const flagMat = new THREE.MeshStandardMaterial({
+      color: 0x2f8f4e,
+      side: THREE.DoubleSide,
+      roughness: 0.8
+    });
+    for (const f of STORE_LANDMARK.flags) {
+      const pole = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.07, 0.09, 7, 8),
+        this.materials.metal
+      );
+      pole.position.set(f.x, 3.5, f.z);
+      this.group.add(pole);
+      const flag = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.9, 8, 1), flagMat);
+      flag.position.set(f.x + 0.85, 6.4, f.z);
+      this.group.add(flag);
+      this.addCollider(f.x - 0.22, f.x + 0.22, f.z - 0.22, f.z + 0.22);
+    }
+  }
+
+  buildAccessibleParking() {
+    const paint = sharedBasic(0x2f6fb5);
+    const white = sharedBasic(0xece8d8);
+    for (const bay of ACCESSIBLE_BAYS) {
+      this.group.add(plane(bay.w, bay.d, paint, bay.x, 0.02, bay.z));
+      this.group.add(box(bay.w, 0.02, 0.14, white, bay.x, 0.03, bay.z - bay.d / 2 + 0.07));
+      this.group.add(box(bay.w, 0.02, 0.14, white, bay.x, 0.03, bay.z + bay.d / 2 - 0.07));
+      this.group.add(box(0.14, 0.02, bay.d, white, bay.x - bay.w / 2 + 0.07, 0.03, bay.z));
+      const mark = new THREE.Mesh(
+        new THREE.PlaneGeometry(1.5, 1.5),
+        new THREE.MeshBasicMaterial({ map: accessMarkTexture(), transparent: true })
+      );
+      mark.rotation.x = -Math.PI / 2;
+      mark.position.set(bay.x, 0.035, bay.z);
+      this.group.add(mark);
+      const postX = bay.x - bay.w / 2 - 0.35;
+      const post = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.06, 0.06, 2.4, 8),
+        this.materials.metal
+      );
+      post.position.set(postX, 1.2, bay.z);
+      this.group.add(post);
+      const sign = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.7, 0.7),
+        new THREE.MeshBasicMaterial({ map: accessMarkTexture(), side: THREE.DoubleSide })
+      );
+      sign.position.set(postX, 2.4, bay.z);
+      this.group.add(sign);
+      this.addCollider(postX - 0.08, postX + 0.08, bay.z - 0.08, bay.z + 0.08);
+    }
+
+    const charger = new THREE.Group();
+    charger.add(box(0.7, 1.6, 0.5, sharedMaterial(0xd8dde0, { roughness: 0.5 }), 0, 0.8, 0));
+    charger.add(box(0.5, 0.4, 0.02, sharedBasic(0x2f9fd0), 0, 1.15, 0.26));
+    charger.position.set(EV_CHARGER.x, 0, EV_CHARGER.z);
+    charger.rotation.y = EV_CHARGER.rot;
+    this.group.add(charger);
+    this.addCollider(
+      EV_CHARGER.x - 0.35,
+      EV_CHARGER.x + 0.35,
+      EV_CHARGER.z - 0.35,
+      EV_CHARGER.z + 0.35
+    );
+
+    // Paved path plus a low ramp link the lot to the sidewalk by the doors.
+    const pathMat = sharedMaterial(0xffffff, { map: parkPathTexture(), roughness: 0.95 });
+    this.group.add(
+      plane(
+        LOT_PATH.maxX - LOT_PATH.minX,
+        LOT_PATH.maxZ - LOT_PATH.minZ,
+        pathMat,
+        (LOT_PATH.minX + LOT_PATH.maxX) / 2,
+        0.05,
+        (LOT_PATH.minZ + LOT_PATH.maxZ) / 2
+      )
+    );
+    this.group.add(
+      box(
+        LOT_PATH.maxX - LOT_PATH.minX,
+        0.1,
+        2.2,
+        sharedMaterial(0xa9a69a, { roughness: 0.9 }),
+        (LOT_PATH.minX + LOT_PATH.maxX) / 2,
+        0.05,
+        LOT_PATH.maxZ - 1.1
+      )
+    );
+  }
+
+  buildPocketPark() {
+    const p = POCKET_PARK;
+    const cx = (p.minX + p.maxX) / 2;
+    const cz = (p.minZ + p.maxZ) / 2;
+    const grass = sharedMaterial(0xffffff, { map: grassTexture(), roughness: 1 });
+    this.group.add(plane(p.maxX - p.minX, p.maxZ - p.minZ, grass, cx, 0.03, cz));
+    const pathMat = sharedMaterial(0xffffff, { map: parkPathTexture(), roughness: 0.95 });
+    this.group.add(plane(2.0, p.maxZ - p.minZ, pathMat, cx, 0.045, cz));
+    this.group.add(plane(p.maxX - p.minX, 1.8, pathMat, cx, 0.045, cz));
+    this.group.add(
+      plane(
+        POCKET_PARK_LINK.maxX - POCKET_PARK_LINK.minX,
+        POCKET_PARK_LINK.maxZ - POCKET_PARK_LINK.minZ,
+        pathMat,
+        (POCKET_PARK_LINK.minX + POCKET_PARK_LINK.maxX) / 2,
+        0.045,
+        (POCKET_PARK_LINK.minZ + POCKET_PARK_LINK.maxZ) / 2
+      )
+    );
+
+    const rim = new THREE.Mesh(
+      new THREE.TorusGeometry(2.0, 0.18, 8, 24),
+      sharedMaterial(0x9d9a8a, { roughness: 0.9 })
+    );
+    rim.rotation.x = -Math.PI / 2;
+    rim.position.set(cx, 0.12, cz);
+    this.group.add(rim);
+    const water = new THREE.Mesh(
+      new THREE.CircleGeometry(1.95, 20),
+      sharedMaterial(0x4c89a8, { transparent: true, opacity: 0.85, roughness: 0.2 })
+    );
+    water.rotation.x = -Math.PI / 2;
+    water.position.set(cx, 0.09, cz);
+    this.group.add(water);
+    this.addCollider(cx - 2.0, cx + 2.0, cz - 2.0, cz + 2.0);
+
+    for (const [x, z, rot] of [
+      [cx - 3.4, cz + 3.4, 0],
+      [cx + 3.4, cz - 3.4, Math.PI]
+    ]) {
+      const bench = this.makeBenchFallback();
+      bench.position.set(x, 0, z);
+      bench.rotation.y = rot;
+      this.group.add(bench);
+      this.addCollider(x - 1.1, x + 1.1, z - 0.5, z + 0.5);
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Signals and city navigation
+  // -------------------------------------------------------------------------
+  updateSignals(time) {
+    if (!this.trafficLights.length) return;
+    const phase = trafficPhase(time);
+    const lit = { red: 0xff3b30, yellow: 0xffc21f, green: 0x34d058 };
+    const dim = { red: 0x431410, yellow: 0x4a3a10, green: 0x104a18 };
+    for (const tl of this.trafficLights) {
+      if (!tl.lenses) continue;
+      // Heads on the south sidewalk face the cross street, the northern ones
+      // face Main Street.
+      const axis = tl.group.position.z < MAIN_STREET.centerZ ? 'ew' : 'ns';
+      const state = phase[axis];
+      for (const key of ['red', 'yellow', 'green']) {
+        const lens = tl.lenses[key];
+        if (!lens?.material?.color) continue;
+        lens.material.color.setHex(key === state ? lit[key] : dim[key]);
+      }
+    }
+  }
+
+  buildNav() {
+    this.nav = new NavGrid({
+      minX: CITY_BOUNDS.minX,
+      maxX: CITY_BOUNDS.maxX,
+      minZ: CITY_BOUNDS.minZ,
+      maxZ: CITY_BOUNDS.maxZ,
+      cell: 1,
+      // City walkers are slimmer than the player; a smaller inflation keeps
+      // 1 m cells from being swallowed around every kerbside prop.
+      radius: 0.28,
+      walkable: isWalkableGround,
+      obstacles: this.colliders
+    });
+  }
+
   buildWaypoint() {
     const g = new THREE.Group();
     const beam = new THREE.Mesh(

@@ -1,4 +1,4 @@
-import { BUSINESSES, canUseOffer } from '../data/businesses.js';
+import { BUSINESSES, BUSINESS_LIST, canUseOffer } from '../data/businesses.js';
 import { PRODUCTS } from '../data/products.js';
 import { spawnOneBox } from './DeliverySystem.js';
 import { rounded } from '../utils/math.js';
@@ -12,11 +12,21 @@ export default class BusinessSystem {
   ensureDay() {
     const s = this.game.state;
     if (!s.businesses || typeof s.businesses !== 'object') {
-      s.businesses = { day: s.day, offers: { bakery: {}, cafe: {}, pharmacy: {} } };
+      s.businesses = { day: s.day, offers: {}, activities: {} };
     }
-    if (s.businesses.day !== s.day) {
-      s.businesses.day = s.day;
-      s.businesses.offers = { bakery: {}, cafe: {}, pharmacy: {} };
+    const root = s.businesses;
+    if (!root.offers || typeof root.offers !== 'object') root.offers = {};
+    if (!root.activities || typeof root.activities !== 'object') root.activities = {};
+    if (root.day !== s.day) {
+      root.day = s.day;
+      root.offers = {};
+      root.activities = {};
+    }
+    for (const biz of BUSINESS_LIST) {
+      if (!root.offers[biz.id] || typeof root.offers[biz.id] !== 'object') {
+        root.offers[biz.id] = {};
+      }
+      if (!Number.isFinite(root.activities[biz.id])) root.activities[biz.id] = 0;
     }
   }
 
@@ -55,8 +65,13 @@ export default class BusinessSystem {
       s.reputation = Math.min(5, (s.reputation || 3) + eff.amount);
       this.game.ui.toast(`Reputation +${eff.amount}`);
     } else if (eff.type === 'boost') {
-      // simple: just toast for now (no player boost system yet)
-      this.game.ui.toast(`Boost applied: x${eff.multiplier || 1} for ${eff.seconds || 30}s`);
+      const multiplier = Math.max(1, eff.multiplier || 1);
+      const seconds = Math.max(1, eff.seconds || 30);
+      this.game.runtime.boost = {
+        multiplier,
+        until: performance.now() + seconds * 1000
+      };
+      this.game.ui.toast(`⚡ Speed boost x${multiplier.toFixed(2)} for ${seconds}s`);
     } else if (eff.type === 'sell' && eff.product) {
       let remaining = eff.qty || 0;
       for (const sh of this.game.runtime.shelves) {

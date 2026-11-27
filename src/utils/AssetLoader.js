@@ -7,13 +7,17 @@ const cache = new Map();
 
 const base = (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) || '/';
 
-function prepare(root) {
+function prepare(root, animations) {
   root.traverse((obj) => {
     if (obj.isMesh) {
       obj.castShadow = true;
       obj.receiveShadow = true;
     }
   });
+  // Keep animation clips on the loaded root so consumers (characters) can drive
+  // an AnimationMixer per instance.
+  root.userData = root.userData || {};
+  root.userData.animations = animations || [];
   return root;
 }
 
@@ -24,7 +28,7 @@ export function loadModel(file) {
       file,
       loader
         .loadAsync(url)
-        .then((gltf) => prepare(gltf.scene))
+        .then((gltf) => prepare(gltf.scene, gltf.animations))
         .catch((err) => {
           console.warn(`[AssetLoader] Could not load ${url}; using procedural fallback.`, err);
           return null;
