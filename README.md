@@ -57,7 +57,7 @@ on-screen controls automatically.
    - **📦 Order Stock** — buy wholesale boxes (prices fluctuate daily).
    - **💲 Pricing** — set each product's shelf price (±$0.10, reset). You cannot sell below the current wholesale cost; the margin and margin % are shown.
    - **📜 Licenses** — unlock new product lines.
-   - **🔨 Build / Furniture** — shelves ($150), refrigerators ($280), store expansion (+4 spots).
+   - **🔨 Build / Furniture** — the in-game build bar (**B**) places shelves ($150), refrigerators ($280) and freezers ($360) anywhere on the unlocked floor, with a product picker for shelf stock. The store starts with 12 shelf spots; each expansion adds a room, a doorway and 4 more spots (levels 1–7, 36 spots total).
    - **👥 Staff** — hire a restocker and/or cashier (wages charged daily).
    - **🎨 Customize** — rename the 3D store sign.
    - **📊 Analytics** — lifetime totals, average net profit, best day, satisfaction rate and a last-7-days profit chart.
@@ -77,7 +77,7 @@ on-screen controls automatically.
 - **Settings** — pause menu offers mouse sensitivity, master **volume** and **graphics** (low/medium/high: shadows + pixel ratio).
 - **WebGL safety** — a small probe runs before Three.js creates a renderer. Unsupported browsers get a readable error overlay instead of a blank canvas; `webglcontextlost` pauses the game, and `webglcontextrestored` hides the overlay and resumes cleanly.
 
-Progress auto-saves to `localStorage` (save schema v4, older saves migrate automatically and corrupt values fall back to safe defaults). Schema v4 adds validated `fixtures` and `businesses` data and expands the shelf layout to 36 physical spots across seven store levels; the build/furniture catalog and neighbour data are the foundation for future placement and neighbour features. Gameplay saves are debounced into a single write and flushed on page hide; manual saves and day transitions write immediately. Use the pause menu to save manually or reset progress.
+Progress auto-saves to `localStorage` (save schema v4, older saves migrate automatically and corrupt values fall back to safe defaults). Schema v4 adds validated `fixtures` and `businesses` data and expands the shelf layout to 36 physical spots across seven store levels. Every expansion unlocks a real room with a doorway, floor, ceiling and rebuilt wall colliders; shelves and fixtures are placed through the build bar, and saving/loading preserves the store level. Neighbour data remains the foundation for future shop features. Gameplay saves are debounced into a single write and flushed on page hide; manual saves and day transitions write immediately. Use the pause menu to save manually or reset progress.
 
 ## 3D assets (Blender → GLB)
 
@@ -113,4 +113,4 @@ e2e/
   workflows/ci.yml        lint, format, unit, build and E2E checks
 ```
 
-`npm test` runs all 37 unit tests with zero test dependencies (`node --test`). `npm run test:e2e` runs four Playwright journeys against a production build.
+`npm test` runs all 46 unit tests with zero test dependencies (`node --test`). `npm run test:e2e` runs four Playwright journeys against a production build.

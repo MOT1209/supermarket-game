@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { clamp } from '../utils/math.js';
 import { movementToWorld } from '../core/controls.js';
 import { cloneModel } from '../utils/AssetLoader.js';
+import { CITY_BOUNDS } from '../data/city.js';
 
 export default class Player {
   constructor(game) {
@@ -39,10 +40,11 @@ export default class Player {
     this.vel.set(axes.x, 0, axes.z);
 
     const { x: dx, z: dz } = movementToWorld(axes, this.yaw, speed, dt);
-    if (!this.game.world.collides(this.pos.x + dx, this.pos.z)) this.pos.x += dx;
-    if (!this.game.world.collides(this.pos.x, this.pos.z + dz)) this.pos.z += dz;
-    this.pos.x = clamp(this.pos.x, -16, 16);
-    this.pos.z = clamp(this.pos.z, -12, 20);
+    const collides = this.game.collides?.bind(this.game) || ((x,z)=>this.game.world.collides(x,z));
+    if (!collides(this.pos.x + dx, this.pos.z)) this.pos.x += dx;
+    if (!collides(this.pos.x, this.pos.z + dz)) this.pos.z += dz;
+    this.pos.x = clamp(this.pos.x, CITY_BOUNDS.minX, CITY_BOUNDS.maxX);
+    this.pos.z = clamp(this.pos.z, CITY_BOUNDS.minZ, CITY_BOUNDS.maxZ);
 
     const moving = axes.x * axes.x + axes.z * axes.z > 0.01;
     if (moving) this.bob += dt * (sprint ? 14 : 9);

@@ -13,6 +13,8 @@ import AudioManager from './Audio.js';
 import Input from './Input.js';
 import Lighting from '../world/Lighting.js';
 import StoreWorld from '../world/StoreWorld.js';
+import CityWorld from '../world/CityWorld.js';
+import CityLife from '../world/CityLife.js';
 import {
   createShelfMesh,
   refreshShelfVisual,
@@ -31,6 +33,9 @@ import { evaluateObjective } from '../systems/Objectives.js';
 import { dayRecord } from '../systems/Analytics.js';
 import { checkAchievements } from '../systems/Achievements.js';
 import { WebGLGuard, WEBGL_LOST } from './WebGLGuard.js';
+import BuildSystem from '../systems/BuildSystem.js';
+import BusinessSystem from '../systems/BusinessSystem.js';
+import { createFixtureMesh } from '../world/FixtureFactory.js';
 
 export default class Game {
   constructor(webglGuard = new WebGLGuard()) {
@@ -60,8 +65,9 @@ export default class Game {
     this.state = loadGame() || defaultState();
     this.runtime = {
       elapsed: this.state.clock || 0,
-      stats: { revenue: 0, stockCost: 0, happy: 0, angry: 0, recycle: 0 },
+      stats: { revenue: 0, stockCost: 0, happy: 0, angry: 0, recycle: 0, buildCost: 0 },
       shelves: [],
+      fixtures: [],
       boxes: [],
       customers: [],
       carried: null,
@@ -72,10 +78,14 @@ export default class Game {
     this.audio.setVolume(this.state.volume ?? 0.8);
     this.lighting = new Lighting(this.scene);
     this.world = new StoreWorld(this);
+    this.city = new CityWorld(this);
+    this.cityLife = new CityLife(this, this.city);
     this.player = new Player(this);
     this.ui = new UIManager(this);
     this.input = new Input(this);
     this.checkout = new CheckoutSystem(this);
+    this.buildSystem = new BuildSystem(this);
+    this.businessSystem = new BusinessSystem(this);
     this.applyGraphics();
 
     // Frequent gameplay saves are coalesced into one localStorage write.
@@ -155,9 +165,19 @@ export default class Game {
 
   boot() {
     this.world.build();
+    if (this.city) this.city.build();
+    this.cityLife?.build?.();
     for (const shd of this.state.shelves) {
       const group = createShelfMesh(shd, this);
       this.runtime.shelves.push({ ...shd, group });
+    }
+    // load fixtures
+    if (Array.isArray(this.state.fixtures)) {
+      for (const fx of this.state.fixtures) {
+        const mesh = createFixtureMesh(fx);
+        this.scene.add(mesh);
+        this.runtime.fixtures.push({ ...fx, group: mesh });
+      }
     }
     preloadProductModels()
       .then(() =>
@@ -194,9 +214,12 @@ export default class Game {
       updateCustomers(this, dt);
       updateStaff(this, dt);
       updatePrompt(this, findInteract(this));
+      this.buildSystem?.update?.(dt);
     }
 
     this.world.updateBeacon(now / 1000);
+    this.city?.update(dt, now / 1000);
+    this.cityLife?.update(dt, now / 1000);
     if (this.toastTimer > 0) {
       this.toastTimer -= dt;
       if (this.toastTimer <= 0) this.ui.el.msg.style.opacity = 0;
@@ -240,6 +263,13 @@ export default class Game {
 
   onInteract() {
     interact(this);
+  }
+
+  collides(x, z) {
+    const inStore = this.world?.collides?.(x, z) || false;
+    if (inStore) return true;
+    const inCity = this.city?.collides?.(x, z) || false;
+    return inCity;
   }
 
   onDrop() {
@@ -343,7 +373,7 @@ export default class Game {
     this.state.day++;
     this.runtime.elapsed = 0;
     this.state.clock = 0;
-    this.runtime.stats = { revenue: 0, stockCost: 0, happy: 0, angry: 0, recycle: 0 };
+    this.runtime.stats = { revenue: 0, stockCost: 0, happy: 0, angry: 0, recycle: 0, buildCost: 0 };
     clearCustomers(this);
     resetStaffTimers();
     fluctuatePrices(this);

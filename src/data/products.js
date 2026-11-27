@@ -149,29 +149,29 @@ export const SHELF_SPOTS = [
   [2, -16],
   [6, -16],
   // East wing (level 3)
-  [16, -4],
-  [16, 0],
-  [16, 4],
-  [16, 8],
+  [16, -5.25],
+  [16, -1.75],
+  [16, 1.75],
+  [16, 5.25],
   // West wing (level 4)
-  [-16, -4],
-  [-16, 0],
-  [-16, 4],
-  [-16, 8],
+  [-16, -5.25],
+  [-16, -1.75],
+  [-16, 1.75],
+  [-16, 5.25],
   // Warehouse extension (level 5)
   [-6, -24],
   [-2, -24],
   [2, -24],
   [6, -24],
   // East / west extensions (levels 6-7)
-  [24, -4],
-  [24, 0],
-  [24, 4],
-  [24, 8],
-  [-24, -4],
-  [-24, 0],
-  [-24, 4],
-  [-24, 8]
+  [24, -5.25],
+  [24, -1.75],
+  [24, 1.75],
+  [24, 5.25],
+  [-24, -5.25],
+  [-24, -1.75],
+  [-24, 1.75],
+  [-24, 5.25]
 ];
 
 export const SHELF_ROTATIONS = [
@@ -241,9 +241,9 @@ export function sellPrice(pid) {
   return Math.round(PRODUCTS[pid].price * DEFAULT_MARKUP * 100) / 100;
 }
 
-// Physical limit is the number of shelf spots; the level only gates how many
-// of them you are allowed to use at once.
+// The base floor has 12 shelf spots and each of the six expansions opens four
+// more, so level 7 unlocks all 36 physical spots.
 export function maxSpots(level) {
-  const unlocked = 4 + (level - 1) * 4;
-  return Math.min(unlocked, SHELF_SPOTS.length);
+  const lvl = Math.max(1, Math.floor(Number(level) || 1));
+  return Math.min(12 + (lvl - 1) * 4, SHELF_SPOTS.length);
 }

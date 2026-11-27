@@ -2,6 +2,9 @@ import { money } from '../utils/math.js';
 import TerminalUI from './TerminalUI.js';
 import SummaryUI from './SummaryUI.js';
 import PauseUI from './PauseUI.js';
+import BuildUI from './BuildUI.js';
+import ShopUI from './ShopUI.js';
+import CityUI from './CityUI.js';
 
 const IDs = [
   'loading',
@@ -36,6 +39,11 @@ export default class UIManager {
     this.terminal = new TerminalUI(game, this);
     this.summary = new SummaryUI(game, this);
     this.pause = new PauseUI(game, this);
+    this.buildUI = new BuildUI(game);
+    this.shopUI = new ShopUI(game);
+    this.cityUI = new CityUI(game);
+    game.buildSystem && (game.buildSystem.ui = this.buildUI); // optional link
+    this.cityUIOpen = false;
     this.bindStatic();
   }
 
@@ -56,6 +64,8 @@ export default class UIManager {
     document.getElementById('resetBtn').onclick = () => {
       if (confirm('Reset all saved progress?')) g.newGame();
     };
+    const buildBtn = document.getElementById('buildBtn');
+    if (buildBtn) buildBtn.onclick = () => g.buildSystem?.toggle();
     document.getElementById('closeBtn').onclick = () => {
       if (g.mode === 'playing') g.closeStore();
     };
@@ -86,6 +96,11 @@ export default class UIManager {
   syncMode(mode) {
     this.game.input?.touch?.setVisible(mode === 'playing');
     if (mode !== 'playing') this.hideLockError();
+    if (mode !== 'playing') this.buildUI?.hide?.();
+  }
+
+  toggleCityUI() {
+    this.cityUI?.show?.();
   }
 
   showLockError(message) {
