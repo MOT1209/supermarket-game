@@ -1,5 +1,8 @@
 node_modules/
 dist/
+__pycache__/
+*.py[cod]
+*.blend1
 .playwright-mcp/
 playwright-report/
 test-results/

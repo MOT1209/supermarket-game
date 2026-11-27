@@ -171,9 +171,35 @@ canvas {
   bottom: 22px;
   display: flex;
   align-items: flex-end;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 10px;
+  max-width: 236px;
   pointer-events: auto;
   touch-action: none;
+}
+#touchUtility {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  width: 100%;
+}
+.touch-chip {
+  pointer-events: auto;
+  touch-action: none;
+  min-width: 52px;
+  min-height: 42px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.1;
+  text-align: center;
+}
+.touch-chip span {
+  display: block;
+  font-size: 10px;
+  font-weight: 500;
+  opacity: 0.9;
 }
 .touch-btn {
   pointer-events: auto;
@@ -191,6 +217,103 @@ canvas {
   font-size: 10px;
   font-weight: 500;
   opacity: 0.9;
+}
+.touch-key {
+  display: block;
+  font-size: 15px;
+  line-height: 1.1;
+}
+#mobileControls.building #touchDrop {
+  display: none;
+}
+#touchInteract.build-primary {
+  filter: brightness(1.12);
+  box-shadow: 0 0 0 3px rgba(255, 215, 107, 0.3);
+}
+#buildBar {
+  position: fixed;
+  left: 50%;
+  bottom: 120px;
+  transform: translateX(-50%);
+  z-index: 15;
+  display: none;
+  width: min(96vw, 980px);
+  justify-content: center;
+  pointer-events: none;
+}
+#buildBar .build-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+#buildBar .build-title {
+  color: #8ff0a4;
+  font-weight: 700;
+}
+#buildBar select {
+  min-height: 34px;
+}
+#buildBar:not(.touch) #buildDoneBtn {
+  order: 10;
+}
+#buildBar.touch {
+  left: 8px;
+  right: 8px;
+  bottom: calc(144px + env(safe-area-inset-bottom, 0px));
+  transform: none;
+  width: auto;
+}
+#buildBar.touch .build-panel {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  padding: 8px;
+}
+#buildBar.touch .build-title {
+  display: none;
+}
+#buildBar.touch select {
+  grid-column: span 2;
+  min-width: 0;
+  min-height: 44px;
+  padding: 6px 8px;
+  border: 1px solid #3f8f55;
+  border-radius: 8px;
+  background: #0f1c13;
+  color: #eef6ef;
+  font-size: 14px;
+}
+#buildBar.touch #buildTypeSelect.wide {
+  grid-column: 1 / -1;
+}
+#buildBar.touch .btn {
+  min-width: 0;
+  min-height: 46px;
+  padding: 6px 4px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+#buildBar.touch #buildPlaceBtn {
+  grid-column: span 2;
+  font-weight: 700;
+}
+#buildBar.touch #buildMoveBtn,
+#buildBar.touch #buildRemoveBtn {
+  grid-column: span 2;
+}
+#buildBar.touch .build-panel.moving #buildMoveBtn,
+#buildBar.touch .build-panel.moving #buildRemoveBtn {
+  grid-column: span 1;
+}
+#buildBar.touch #buildCancelBtn {
+  grid-column: span 2;
+  display: none;
+}
+#buildBar.touch .build-panel.moving #buildCancelBtn {
+  display: block;
 }
 .touch-btn.active {
   filter: brightness(1.35);
@@ -730,10 +853,15 @@ input[type='range'] {
     right: 12px;
     bottom: 14px;
     gap: 8px;
+    max-width: 206px;
   }
   .touch-btn {
     min-width: 56px;
     min-height: 56px;
+  }
+  .touch-chip {
+    min-width: 46px;
+    min-height: 38px;
   }
   .lock-bar {
     top: 56px;
@@ -757,6 +885,15 @@ input[type='range'] {
   .touch-btn {
     min-width: 52px;
     min-height: 52px;
+  }
+  #buildBar.touch {
+    bottom: calc(118px + env(safe-area-inset-bottom, 0px));
+  }
+  #buildBar.touch select {
+    min-height: 38px;
+  }
+  #buildBar.touch .btn {
+    min-height: 40px;
   }
   #carry {
     bottom: 120px;

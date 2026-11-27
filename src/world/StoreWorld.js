@@ -36,6 +36,11 @@ export default class StoreWorld {
     this.interactables.push(obj);
   }
 
+  untagInteract(obj) {
+    const i = this.interactables.indexOf(obj);
+    if (i >= 0) this.interactables.splice(i, 1);
+  }
+
   build() {
     const { scene, state } = this.game;
 

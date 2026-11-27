@@ -29,7 +29,17 @@
           <span class="joy-label">MOVE</span>
         </div>
         <div id="touchActions">
-          <button class="btn touch-btn" id="touchInteract" type="button">E<span>Use</span></button>
+          <div id="touchUtility">
+            <button class="btn alt touch-chip" id="touchPause" type="button">
+              ⏸<span>Pause</span>
+            </button>
+            <button class="btn alt touch-chip" id="touchCity" type="button">
+              🏙<span>City</span>
+            </button>
+          </div>
+          <button class="btn touch-btn" id="touchInteract" type="button" aria-label="Use">
+            <b class="touch-key" id="touchInteractKey">E</b><span id="touchInteractLabel">Use</span>
+          </button>
           <button class="btn touch-btn" id="touchDrop" type="button">Q<span>Drop</span></button>
           <button class="btn alt touch-btn" id="touchSprint" type="button">
             ⇧<span>Sprint</span>
@@ -95,6 +105,17 @@
           <option value="low">Low (no shadows)</option>
           <option value="medium">Medium</option>
           <option value="high">High</option>
+        </select>
+        <label>Player Character</label>
+        <select id="playerSelect">
+          <option value="male">Male — short sleeves</option>
+          <option value="female">Female — 3/4 sleeves</option>
+        </select>
+        <label>Camera View</label>
+        <select id="viewSelect">
+          <option value="first">First person — hands</option>
+          <option value="second">Second person — shoulder</option>
+          <option value="third">Third person — behind</option>
         </select>
         <p class="small">Lower = slower, more precise camera. Default 0.0008.</p>
         <div class="row" style="margin-top: 14px">

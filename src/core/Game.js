@@ -21,7 +21,12 @@ import {
   preloadProductModels
 } from '../world/ShelfFactory.js';
 import Player from '../entities/Player.js';
-import { spawnCustomer, updateCustomers, clearCustomers } from '../entities/Customer.js';
+import {
+  spawnCustomer,
+  updateCustomers,
+  clearCustomers,
+  warmCustomerModels
+} from '../entities/Customer.js';
 import { updateStaff, resetStaffTimers } from '../entities/Staff.js';
 import UIManager from '../ui/UIManager.js';
 import CheckoutSystem from '../systems/CheckoutSystem.js';
@@ -187,6 +192,9 @@ export default class Game {
         this.runtime.shelves.forEach((sh) => refreshShelfVisual(sh.spot, sh.group, sh, this))
       )
       .catch((err) => console.warn('[Game] Product GLB refresh skipped.', err));
+    // Warm the six most common shopper models after the first frames so the
+    // first arrivals do not hitch on a cold GLB download.
+    setTimeout(() => warmCustomerModels(), 1500);
     this.world.rebuildColliders();
     spawnDelivery(this);
     this.lastAutosave = performance.now();
@@ -268,6 +276,13 @@ export default class Game {
     interact(this);
   }
 
+  // The touch Use button and keyboard E mean the same thing: while building,
+  // the primary action places the selected piece; otherwise it interacts.
+  onPrimaryAction() {
+    if (this.buildSystem?.enabled) this.buildSystem.confirmPlace();
+    else this.onInteract();
+  }
+
   collides(x, z) {
     const inStore = this.world?.collides?.(x, z) || false;
     if (inStore) return true;
@@ -279,11 +294,14 @@ export default class Game {
     const box = this.runtime.carried;
     if (!box) return;
     const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion);
-    box.group.position.set(
-      this.player.pos.x + forward.x * 1.2,
-      0,
-      this.player.pos.z + forward.z * 1.2
-    );
+    const x = this.player.pos.x + forward.x * 1.2;
+    const z = this.player.pos.z + forward.z * 1.2;
+    // A box dropped inside a wall would be unreachable, so refuse the drop.
+    if (this.collides(x, z)) {
+      this.ui.toast('No room to drop the box here');
+      return;
+    }
+    box.group.position.set(x, 0, z);
     box.group.rotation.set(0, this.player.yaw, 0);
     this.world.interactables.push(box.group);
     this.runtime.carried = null;
@@ -296,6 +314,14 @@ export default class Game {
       this.ui.shopUI.hide();
     } else if (this.ui.el.terminalOverlay.classList.contains('show')) {
       this.ui.closeTerminal();
+    } else if (this.runtime.checkoutCustomer) {
+      // Escape backs out of the till like the Cancel button does.
+      this.checkout.cancel();
+    } else if (this.mode === 'playing' && this.buildSystem?.enabled) {
+      // Leave build mode in layers: a pending move first, then the mode.
+      if (this.buildSystem.moveTarget) this.buildSystem.cancel();
+      else this.buildSystem.stop();
+      this.input?.restoreLockOrPause?.();
     } else if (this.mode === 'playing') {
       this.pauseGame();
     } else if (this.mode === 'paused' && !this.input.justUnlocked()) {

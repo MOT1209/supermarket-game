@@ -4,25 +4,27 @@ import { pick, rand, rounded } from '../utils/math.js';
 import { emojiTexture } from '../utils/textures.js';
 import { currentSellPrice } from '../systems/Pricing.js';
 import { onHappyCustomer, onAngryCustomer } from '../systems/Reputation.js';
-import { cloneModel, loadModel } from '../utils/AssetLoader.js';
+import { cloneCharacter, loadModel } from '../utils/AssetLoader.js';
 import { refreshShelfVisual } from '../world/ShelfFactory.js';
+import { CUSTOMER_CHARACTERS, pickCustomerCharacter } from '../data/customers.js';
+import { makeCarryProp, releaseCarryProp } from './CustomerProps.js';
 
-const CHAR_FILES = [
-  'customers/customer_male_boy.glb',
-  'customers/customer_male_teen.glb',
-  'customers/customer_male_young.glb',
-  'customers/customer_male_adult.glb',
-  'customers/customer_male_middle_aged.glb',
-  'customers/customer_male_senior.glb',
-  'customers/customer_female_girl.glb',
-  'customers/customer_female_teen.glb',
-  'customers/customer_female_young.glb',
-  'customers/customer_female_adult.glb',
-  'customers/customer_female_middle_aged.glb',
-  'customers/customer_female_senior.glb'
-];
+// Clips that play once and clamp; everything else loops.
+const ONE_SHOT = new Set([
+  'PickItem',
+  'PlaceItem',
+  'Checkout',
+  'Greet',
+  'Stop',
+  'TurnLeft',
+  'TurnRight',
+  'ReachHigh'
+]);
 
-function makeEmoji() {
+const WALK_SPEED = (character) =>
+  character.speed * (character.carry === 'cart' ? 0.82 : character.carry === 'basket' ? 0.92 : 1);
+
+function makeEmoji(height) {
   const s = new THREE.Sprite(
     new THREE.SpriteMaterial({
       map: emojiTexture('😊'),
@@ -30,23 +32,10 @@ function makeEmoji() {
       depthTest: false
     })
   );
-  s.scale.set(0.9, 0.9, 1);
-  s.position.y = 2.5;
+  s.scale.set(0.7, 0.7, 1);
+  s.position.y = height + 0.55;
   s.visible = false;
   return s;
-}
-
-function disposeGroup(group) {
-  group.traverse((o) => {
-    if (o.geometry) o.geometry.dispose();
-    if (o.material) {
-      const mats = Array.isArray(o.material) ? o.material : [o.material];
-      mats.forEach((m) => {
-        if (m.map) m.map.dispose();
-        m.dispose();
-      });
-    }
-  });
 }
 
 export function showEmoji(c, emoji, sec = 2.2) {
@@ -57,54 +46,144 @@ export function showEmoji(c, emoji, sec = 2.2) {
   c.emojiTimer = sec;
 }
 
-function setupAnimations(c, model, anims) {
-  const clips = anims || model.userData?.animations || [];
+function setupAnimations(c, model, clips) {
   c.mixer = new THREE.AnimationMixer(model);
   c.actions = {};
-  for (const clip of clips) {
+  for (const clip of clips || []) {
     try {
       const action = c.mixer.clipAction(clip);
+      if (ONE_SHOT.has(clip.name)) {
+        action.setLoop(THREE.LoopOnce, 1);
+        action.clampWhenFinished = true;
+      } else {
+        action.setLoop(THREE.LoopRepeat, Infinity);
+      }
       c.actions[clip.name] = action;
-    } catch (e) {
-      console.warn('[Customer] clipAction failed', clip.name, e);
+    } catch (err) {
+      console.warn('[Customer] clipAction failed', clip.name, err);
     }
   }
   c.currentAnim = null;
-  // default idle
-  playAnim(c, 'Idle');
+  c.animLock = 0;
+  c.lockedAnim = null;
+  playAnim(c, 'Idle', 0);
 }
 
-export function playAnim(c, name, fade = 0.25) {
+export function playAnim(c, name, fade = 0.22, lock = 0) {
   if (!c.actions) return;
+  if (c.animLock > 0 && name !== c.lockedAnim) return;
   const next = c.actions[name];
-  if (!next || c.currentAnim === name) return;
+  if (!next) return;
+  if (c.currentAnim === name && c.animLock <= 0) return;
   const prev = c.currentAnim ? c.actions[c.currentAnim] : null;
   next.reset();
   next.setEffectiveTimeScale(1);
   next.setEffectiveWeight(1);
   next.fadeIn(fade);
   next.play();
-  if (prev) prev.fadeOut(fade);
+  if (prev && prev !== next) prev.fadeOut(fade);
   c.currentAnim = name;
+  if (lock > 0) {
+    c.animLock = lock;
+    c.lockedAnim = name;
+  }
+}
+
+function desiredAnim(c) {
+  if (c.animLock > 0) return c.lockedAnim;
+  if (c.moving) {
+    if (c.character.carry === 'cart') return 'WalkCart';
+    if (c.character.carry === 'basket') return 'WalkBasket';
+    return 'Walk';
+  }
+  if (c.state === 'wait' || c.state === 'queue') return 'Wait';
+  if (c.state === 'browse' && c.lookTimer > 0) return 'LookAround';
+  if (c.character.carry === 'cart' && c.actions.IdleCart) return 'IdleCart';
+  if (c.character.carry === 'basket' && c.actions.IdleBasket) return 'IdleBasket';
+  return 'Idle';
+}
+
+function updateAnim(c, dt) {
+  if (c.mixer) c.mixer.update(dt);
+  if (c.animLock > 0) {
+    c.animLock -= dt;
+    if (c.animLock <= 0) c.lockedAnim = null;
+    return;
+  }
+  playAnim(c, desiredAnim(c));
+}
+
+function spawnSpot(game, pending) {
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const x = rand(-3.4, 3.4);
+    const z = 15.2 + rand(0, 1.8);
+    const clear = game.runtime.customers.every(
+      (c) => Math.hypot(c.group.position.x - x, c.group.position.z - z) > 1.05
+    ) && pending.every((p) => Math.hypot(p[0] - x, p[1] - z) > 1.05);
+    if (clear) return [x, z];
+  }
+  return null;
+}
+
+/** Prefer a character that is not already in the store or still loading. */
+function pickFreshCharacter(game, pending) {
+  const present = new Set([
+    ...game.runtime.customers.map((c) => c.character.id),
+    ...pending
+  ]);
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    const character = pickCustomerCharacter();
+    if (!present.has(character.id)) return character;
+  }
+  return pickCustomerCharacter();
 }
 
 export function spawnCustomer(game) {
-  if (game.runtime.customers.length >= MAX_CUSTOMERS) return;
-  const file = pick(CHAR_FILES);
-  Promise.all([cloneModel(file), loadModel(file)])
-    .then(([model, original]) => {
-      if (!model) return;
-      const g = model;
-      const emoji = makeEmoji();
-      g.add(emoji);
-      g.position.set(rand(-1, 1), 0, 16);
-      g.scale.setScalar(rand(0.95, 1.05));
-      game.scene.add(g);
+  const pending = (game.runtime.pendingSpawns ||= []);
+  const pendingChars = (game.runtime.pendingCharacters ||= []);
+  if (game.runtime.customers.length + pending.length >= MAX_CUSTOMERS) return;
+  const spot = spawnSpot(game, pending);
+  if (!spot) return;
+  pending.push(spot);
+
+  const character = pickFreshCharacter(game, pendingChars);
+  pendingChars.push(character.id);
+  const token = game.runtime.spawnToken || 0;
+  const release = () => {
+    const index = pending.indexOf(spot);
+    if (index >= 0) pending.splice(index, 1);
+    const charIndex = pendingChars.indexOf(character.id);
+    if (charIndex >= 0) pendingChars.splice(charIndex, 1);
+  };
+  cloneCharacter(character.file)
+    .then((model) => {
+      release();
+      // The store may have closed (or been reset) while the GLB was loading.
+      if (!model || token !== (game.runtime.spawnToken || 0)) return;
+      if (game.runtime.customers.length >= MAX_CUSTOMERS) return;
+
+      const emoji = makeEmoji(character.height);
+      model.add(emoji);
+      model.position.set(spot[0], 0, spot[1]);
+      model.scale.setScalar(1);
+      model.rotation.y = Math.PI;
+      game.scene.add(model);
+
+      const prop = makeCarryProp(character.carry, character.height);
+      if (prop) model.add(prop);
+
       const c = {
-        group: g,
+        group: model,
+        character,
+        height: character.height,
+        carry: character.carry,
+        prop,
         mixer: null,
         actions: null,
         currentAnim: null,
+        animLock: 0,
+        lockedAnim: null,
+        lookTimer: 0,
         emoji,
         state: 'enter',
         timer: 0,
@@ -119,21 +198,42 @@ export function spawnCustomer(game) {
         prefFound: false,
         exitTarget: { x: rand(-1.6, 1.6), z: 16.5 }
       };
-      const anims = (original && original.userData && original.userData.animations) || [];
-      setupAnimations(c, model, anims);
+      const clips = model.userData?.animations || [];
+      setupAnimations(c, model, clips);
       game.runtime.customers.push(c);
     })
-    .catch((err) => console.warn('[Customer] spawn failed', err));
+    .catch((err) => {
+      release();
+      console.warn('[Customer] spawn failed', err);
+    });
 }
 
 export const basketTotal = (game, c) =>
   rounded(c.basket.reduce((t, pid) => t + currentSellPrice(game, pid), 0));
 
+function removeCustomer(game, c, index) {
+  game.scene.remove(c.group);
+  if (c.mixer) c.mixer.stopAllAction();
+  if (c.emoji?.material) {
+    c.emoji.material.map?.dispose();
+    c.emoji.material.dispose();
+  }
+  releaseCarryProp(c.prop);
+  game.runtime.customers.splice(index, 1);
+}
+
 export function clearCustomers(game) {
+  game.runtime.spawnToken = (game.runtime.spawnToken || 0) + 1;
+  game.runtime.pendingSpawns = [];
+  game.runtime.pendingCharacters = [];
   for (const c of game.runtime.customers) {
     game.scene.remove(c.group);
     if (c.mixer) c.mixer.stopAllAction();
-    disposeGroup(c.group);
+    if (c.emoji?.material) {
+      c.emoji.material.map?.dispose();
+      c.emoji.material.dispose();
+    }
+    releaseCarryProp(c.prop);
   }
   game.runtime.customers = [];
 }
@@ -146,9 +246,7 @@ export function reindexQueue(game) {
 }
 
 export function waitingCustomer(game) {
-  const w = game.runtime.customers.filter(
-    (c) => (c.state === 'wait' || c.state === 'queue') && c.queueIndex === 0
-  );
+  const w = game.runtime.customers.filter((c) => c.state === 'wait' && c.queueIndex === 0);
   return w.length ? w[0] : null;
 }
 
@@ -166,22 +264,12 @@ export function doAutoCheckout(game, c) {
   game.save();
 }
 
-function updateAnim(c, dt) {
-  if (c.mixer) c.mixer.update(dt);
-  // decide animation from state
-  if (c.state === 'happy' || c.state === 'angry') {
-    playAnim(c, 'React');
-  } else if (c.moving) {
-    playAnim(c, 'Walk');
-  } else if (c.state === 'toShelf') {
-    playAnim(c, 'PickItem');
-  } else if (c.state === 'browse') {
-    playAnim(c, 'Shopping');
-  } else if (c.state === 'queue' || c.state === 'wait') {
-    playAnim(c, 'Wait');
-  } else {
-    playAnim(c, 'Idle');
-  }
+/** Begin loading the most common characters in the background. */
+export function warmCustomerModels(limit = 6) {
+  const ordered = [...CUSTOMER_CHARACTERS].sort((a, b) => b.weight - a.weight).slice(0, limit);
+  return Promise.all(ordered.map((c) => loadModel(c.file))).catch((err) => {
+    console.warn('[Customer] warm-up skipped', err);
+  });
 }
 
 export function updateCustomers(game, dt) {
@@ -194,11 +282,13 @@ export function updateCustomers(game, dt) {
       c.emojiTimer -= dt;
       if (c.emojiTimer <= 0) c.emoji.visible = false;
     }
+    if (c.lookTimer > 0) c.lookTimer -= dt;
 
     if (c.state === 'enter') {
-      if (moveToward(c, pick([-4, -2, 0, 2, 4]), 7, 1.9, dt)) {
+      if (moveToward(c, pick([-4, -2, 0, 2, 4]), 7, WALK_SPEED(c.character), dt)) {
         c.state = 'browse';
         c.timer = 0;
+        c.lookTimer = rand(2.5, 5);
       }
     } else if (c.state === 'browse') {
       c.timer -= dt;
@@ -224,7 +314,7 @@ export function updateCustomers(game, dt) {
       }
     } else if (c.state === 'toShelf') {
       const t = c.browseTarget;
-      if (moveToward(c, t[0], t[1], 1.9, dt)) {
+      if (moveToward(c, t[0], t[1], WALK_SPEED(c.character), dt)) {
         const sh = runtime.shelves.find((s) => s === t[2]);
         if (sh && sh.stock > 0) {
           sh.stock--;
@@ -234,16 +324,19 @@ export function updateCustomers(game, dt) {
           if (PRODUCTS[sh.productId].category === c.pref) c.prefFound = true;
           game.audio.play('scan');
           c.visits++;
+          playAnim(c, 'PickItem', 0.12, 1.35);
         }
         c.state = 'browse';
         c.timer = rand(0.8, 1.6);
+        c.lookTimer = rand(4, 9);
       }
     } else if (c.state === 'queue') {
       if (c.queueIndex < 0)
         c.queueIndex = runtime.customers.filter((x) => x.state === 'queue' && x !== c).length;
-      if (moveToward(c, 7, 6.2 - c.queueIndex * 1.1, 1.8, dt)) {
+      if (moveToward(c, 7, 6.2 - c.queueIndex * 1.1, WALK_SPEED(c.character) * 0.95, dt)) {
         c.state = 'wait';
         c.timer = 0;
+        if (c.queueIndex === 0) playAnim(c, 'Checkout', 0.2, 1.2);
       }
     } else if (c.state === 'wait') {
       c.patience -= dt;
@@ -262,12 +355,10 @@ export function updateCustomers(game, dt) {
       }
     } else if (c.state === 'happy' || c.state === 'angry') {
       const exit = c.exitTarget || { x: 0, z: 16.5 };
-      if (moveToward(c, exit.x, exit.z, 2.6, dt)) {
-        game.scene.remove(c.group);
-        if (c.mixer) c.mixer.stopAllAction();
-        disposeGroup(c.group);
-        runtime.customers.splice(i, 1);
+      if (moveToward(c, exit.x, exit.z, WALK_SPEED(c.character) * 1.35, dt)) {
+        removeCustomer(game, c, i);
         reindexQueue(game);
+        continue;
       }
     }
     updateAnim(c, dt);
@@ -276,8 +367,8 @@ export function updateCustomers(game, dt) {
 
 function moveToward(c, tx, tz, speed, dt) {
   const g = c.group;
-  const dx = tx - g.position.x,
-    dz = tz - g.position.z;
+  const dx = tx - g.position.x;
+  const dz = tz - g.position.z;
   const d = Math.hypot(dx, dz);
   if (d < 0.15) {
     c.moving = false;
@@ -286,7 +377,12 @@ function moveToward(c, tx, tz, speed, dt) {
   const step = Math.min(d, speed * dt);
   g.position.x += (dx / d) * step;
   g.position.z += (dz / d) * step;
-  g.rotation.y = Math.atan2(dx, dz);
+  const targetYaw = Math.atan2(dx, dz);
+  let delta = targetYaw - g.rotation.y;
+  while (delta > Math.PI) delta -= Math.PI * 2;
+  while (delta < -Math.PI) delta += Math.PI * 2;
+  const turn = Math.min(1, dt * 9);
+  g.rotation.y += delta * turn;
   c.moving = true;
   return false;
 }

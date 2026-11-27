@@ -55,10 +55,14 @@ export default class ShopWorld {
     this.game = game;
     this.city = city;
     this.shops = new Map();
+    // Outer wall meshes for every shop, exposed so interaction cannot reach
+    // through them (the same role world.structure plays for the supermarket).
+    this.wallMeshes = [];
     this.time = 0;
   }
 
   build() {
+    this.wallMeshes.length = 0;
     for (const business of BUSINESS_LIST) this.buildShop(business);
   }
 
@@ -199,6 +203,14 @@ export default class ShopWorld {
     for (const z of [3.1, 7.1, 10.1]) {
       box(g, 1.25, 0.07, 0.26, lightMat, 0, 4.44, z, { cast: false });
     }
+
+    // Only the outer wall boxes: glass, displays and interior liners must not
+    // block the reach test.
+    this.wallMeshes.push(
+      ...g.children.filter(
+        (child) => child.isMesh && (child.material === bodyMat || child.material === frontMat)
+      )
+    );
 
     const light = new THREE.PointLight(0xffd9a0, 0, 15, 2);
     light.position.set(0, 3.85, 5.7);

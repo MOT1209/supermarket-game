@@ -1,0 +1,46 @@
+{
+  "id": "female_customer_01",
+  "name": "Young Girl",
+  "gender": "female",
+  "age_group": "child",
+  "age": 9,
+  "height_m": 1.29,
+  "tris": 19046,
+  "verts": 9853,
+  "bones": 22,
+  "materials": 23,
+  "animations": [
+    "Checkout",
+    "Greet",
+    "Idle",
+    "IdleBasket",
+    "IdleCart",
+    "Inspect",
+    "LookAround",
+    "PickItem",
+    "PlaceItem",
+    "ReachHigh",
+    "Run",
+    "Stop",
+    "TurnLeft",
+    "TurnRight",
+    "Wait",
+    "Walk",
+    "WalkBasket",
+    "WalkCart"
+  ],
+  "carry": "none",
+  "spawn_weight": 0.8,
+  "walk": {
+    "stride": 0.9,
+    "arm": 1.2,
+    "bounce": 1.4,
+    "stoop": 0.0,
+    "tempo": 1.06
+  },
+  "files": {
+    "blend": "assets/characters/blender_source/female_customer_01.blend",
+    "glb": "assets/characters/exports/glb/female_customer_01.glb",
+    "game_glb": "public/models/customers/female_customer_01.glb"
+  }
+}

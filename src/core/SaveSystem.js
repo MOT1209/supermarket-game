@@ -67,6 +67,8 @@ export function defaultState() {
     sensitivity: 0.0008,
     volume: 0.8,
     graphics: 'high',
+    playerModel: 'male',
+    viewMode: 'first',
     reputation: REPUTATION_START,
     clock: 0,
     lifetimeRevenue: 0,
@@ -185,6 +187,8 @@ export function migrate(data) {
       : base.sensitivity;
   m.volume = safeNumber(m.volume, 0.8, 0, 1);
   m.graphics = GRAPHICS_MODES.has(m.graphics) ? m.graphics : base.graphics;
+  m.playerModel = m.playerModel === 'female' ? 'female' : 'male';
+  m.viewMode = ['first', 'second', 'third'].includes(m.viewMode) ? m.viewMode : 'first';
   m.storeName =
     typeof m.storeName === 'string' && m.storeName.trim()
       ? m.storeName.trim().slice(0, 24)

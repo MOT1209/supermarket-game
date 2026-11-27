@@ -21,8 +21,12 @@ export default class TouchControls {
       base: document.getElementById('joystickBase'),
       knob: document.getElementById('joystickKnob'),
       interact: document.getElementById('touchInteract'),
+      interactKey: document.getElementById('touchInteractKey'),
+      interactLabel: document.getElementById('touchInteractLabel'),
       drop: document.getElementById('touchDrop'),
-      sprint: document.getElementById('touchSprint')
+      sprint: document.getElementById('touchSprint'),
+      pause: document.getElementById('touchPause'),
+      city: document.getElementById('touchCity')
     };
     this.bind();
     this.setVisible(false);
@@ -46,8 +50,10 @@ export default class TouchControls {
       if (this.enabled) e.preventDefault();
     });
 
-    this.bindButton(this.el.interact, () => this.game.onInteract());
+    this.bindButton(this.el.interact, () => this.game.onPrimaryAction());
     this.bindButton(this.el.drop, () => this.game.onDrop());
+    this.bindButton(this.el.pause, () => this.game.pauseGame());
+    this.bindButton(this.el.city, () => this.game.ui?.toggleCityUI?.());
     this.bindButton(
       this.el.sprint,
       () => {},
@@ -158,6 +164,14 @@ export default class TouchControls {
     if (!this.lookPointer || e.pointerId !== this.lookPointer.id) return;
     this.release(this.game.renderer.domElement, e.pointerId);
     this.lookPointer = null;
+  }
+
+  setBuildMode(active) {
+    this.el.root?.classList.toggle('building', active);
+    if (this.el.interactKey) this.el.interactKey.textContent = active ? '✓' : 'E';
+    if (this.el.interactLabel) this.el.interactLabel.textContent = active ? 'Place' : 'Use';
+    this.el.interact?.classList.toggle('build-primary', active);
+    this.el.interact?.setAttribute('aria-label', active ? 'Place build item' : 'Use');
   }
 
   setVisible(visible) {

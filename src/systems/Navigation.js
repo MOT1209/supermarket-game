@@ -4,40 +4,65 @@
 // whenever furniture changes, and A* paths can be smoothed with a line-of-sight
 // test so customers walk naturally instead of hugging cell centres.
 
-class MinHeap {
-  constructor() {
-    this.items = [];
+// Binary heap over cell indices, kept in two typed arrays that survive between
+// searches: the earlier object-per-push heap was the biggest allocation source
+// inside a single findPath call.
+class IndexHeap {
+  constructor(capacity = 2048) {
+    this.items = new Int32Array(capacity);
+    this.costs = new Float64Array(capacity);
+    this.size = 0;
   }
-  get size() {
-    return this.items.length;
+  clear() {
+    this.size = 0;
   }
-  push(node) {
-    const a = this.items;
-    a.push(node);
-    let i = a.length - 1;
+  grow(need) {
+    let cap = this.items.length;
+    while (cap < need) cap *= 2;
+    const items = new Int32Array(cap);
+    items.set(this.items);
+    const costs = new Float64Array(cap);
+    costs.set(this.costs);
+    this.items = items;
+    this.costs = costs;
+  }
+  push(idx, f) {
+    if (this.size === this.items.length) this.grow(this.size + 1);
+    const items = this.items;
+    const costs = this.costs;
+    let i = this.size++;
     while (i > 0) {
       const p = (i - 1) >> 1;
-      if (a[p].f <= a[i].f) break;
-      [a[p], a[i]] = [a[i], a[p]];
+      if (costs[p] <= f) break;
+      items[i] = items[p];
+      costs[i] = costs[p];
       i = p;
     }
+    items[i] = idx;
+    costs[i] = f;
   }
   pop() {
-    const a = this.items;
-    if (!a.length) return null;
-    const top = a[0];
-    const last = a.pop();
-    if (a.length && last) {
-      a[0] = last;
+    const items = this.items;
+    const costs = this.costs;
+    const top = items[0];
+    const size = --this.size;
+    if (size > 0) {
+      items[0] = items[size];
+      costs[0] = costs[size];
       let i = 0;
       for (;;) {
         const l = i * 2 + 1;
         const r = l + 1;
         let best = i;
-        if (l < a.length && a[l].f < a[best].f) best = l;
-        if (r < a.length && a[r].f < a[best].f) best = r;
+        if (l < size && costs[l] < costs[best]) best = l;
+        if (r < size && costs[r] < costs[best]) best = r;
         if (best === i) break;
-        [a[best], a[i]] = [a[i], a[best]];
+        const bi = items[best];
+        const bc = costs[best];
+        items[best] = items[i];
+        costs[best] = costs[i];
+        items[i] = bi;
+        costs[i] = bc;
         i = best;
       }
     }
@@ -86,7 +111,17 @@ export class NavGrid {
     this.blocked = new Uint8Array(this.cols * this.rows);
     this.extraWalkable = walkable;
     this.stamp = 0;
-    this.visit = new Uint32Array(this.cols * this.rows);
+    // A* needs a real closed set: without one the same cell is expanded again
+    // every time a cheaper route reaches it, which burned the expansion budget
+    // and returned null on long city routes that do exist.
+    this.closedAt = new Uint32Array(this.cols * this.rows);
+    // Scratch buffers reused by every search. On the city grid these are
+    // 320x216 cells, so allocating and clearing them per call threw away
+    // ~550 kB per path; a stamp marks which entries belong to this search.
+    this.gScore = new Float32Array(this.cols * this.rows);
+    this.gAt = new Uint32Array(this.cols * this.rows);
+    this.came = new Int32Array(this.cols * this.rows);
+    this.open = new IndexHeap();
 
     for (const r of obstacles) {
       if (!r) continue;
@@ -197,7 +232,7 @@ export class NavGrid {
    * Returns a smoothed list of world-space waypoints, or null when no route
    * exists. Start/goal are snapped to the nearest open cells.
    */
-  findPath(startX, startZ, goalX, goalZ, maxExpanded = 9000) {
+  findPath(startX, startZ, goalX, goalZ, maxExpanded = 20000) {
     const start = this.nearestOpen(startX, startZ, 8);
     const goal = this.nearestOpen(goalX, goalZ, 8);
     if (!start || !goal) return null;
@@ -209,41 +244,58 @@ export class NavGrid {
     }
 
     const stamp = ++this.stamp;
-    const open = new MinHeap();
-    const gScore = new Float32Array(this.cols * this.rows).fill(Infinity);
-    const came = new Int32Array(this.cols * this.rows).fill(-1);
+    const open = this.open;
+    open.clear();
+    const gScore = this.gScore;
+    const gAt = this.gAt;
+    const came = this.came;
     const startIdx = this.index(start.cx, start.cz);
     const goalIdx = this.index(goal.cx, goal.cz);
     gScore[startIdx] = 0;
-    const h = (cx, cz) => Math.hypot(cx - goal.cx, cz - goal.cz);
-    open.push({ cx: start.cx, cz: start.cz, f: h(start.cx, start.cz) });
-    this.visit[startIdx] = stamp;
+    gAt[startIdx] = stamp;
+    // The buffers are reused, so the root must not inherit an old parent.
+    came[startIdx] = -1;
+    const gx = goal.cx;
+    const gz = goal.cz;
+    // Math.hypot is several times slower than the plain square root and this
+    // runs on every expansion.
+    const h = (cx, cz) => {
+      const dx = cx - gx;
+      const dz = cz - gz;
+      return Math.sqrt(dx * dx + dz * dz);
+    };
+    open.push(startIdx, h(start.cx, start.cz));
     let expanded = 0;
     let found = false;
 
     while (open.size && expanded < maxExpanded) {
-      const cur = open.pop();
-      const curIdx = this.index(cur.cx, cur.cz);
-      if (this.visit[curIdx] !== stamp) continue;
+      const curIdx = open.pop();
+      if (this.closedAt[curIdx] === stamp) continue;
+      this.closedAt[curIdx] = stamp;
       if (curIdx === goalIdx) {
         found = true;
         break;
       }
       expanded++;
-      for (const [dx, dz, cost] of DIRS) {
-        const nx = cur.cx + dx;
-        const nz = cur.cz + dz;
+      const curCx = curIdx % this.cols;
+      const curCz = (curIdx - curCx) / this.cols;
+      for (let d = 0; d < DIRS.length; d++) {
+        const dx = DIRS[d][0];
+        const dz = DIRS[d][1];
+        const cost = DIRS[d][2];
+        const nx = curCx + dx;
+        const nz = curCz + dz;
         if (!this.isOpen(nx, nz)) continue;
         // Do not cut through the corner of a blocked cell.
-        if (dx && dz && (!this.isOpen(cur.cx + dx, cur.cz) || !this.isOpen(cur.cx, cur.cz + dz)))
+        if (dx && dz && (!this.isOpen(curCx + dx, curCz) || !this.isOpen(curCx, curCz + dz)))
           continue;
         const nIdx = this.index(nx, nz);
         const tentative = gScore[curIdx] + cost;
-        if (tentative >= gScore[nIdx]) continue;
+        if (tentative >= (gAt[nIdx] === stamp ? gScore[nIdx] : Infinity)) continue;
         gScore[nIdx] = tentative;
+        gAt[nIdx] = stamp;
         came[nIdx] = curIdx;
-        this.visit[nIdx] = stamp;
-        open.push({ cx: nx, cz: nz, f: tentative + h(nx, nz) });
+        open.push(nIdx, tentative + h(nx, nz));
       }
     }
 

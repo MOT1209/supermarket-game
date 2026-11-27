@@ -47,6 +47,22 @@ test('migrate clamps settings and rejects unknown graphics modes', () => {
   assert.equal(migrated.reputation, 5);
 });
 
+test('migrate keeps only the two player models and three camera views', () => {
+  const s = defaultState();
+  assert.equal(s.playerModel, 'male');
+  assert.equal(s.viewMode, 'first');
+  s.playerModel = 'female';
+  s.viewMode = 'third';
+  const kept = migrate(s);
+  assert.equal(kept.playerModel, 'female');
+  assert.equal(kept.viewMode, 'third');
+  s.playerModel = 'robot';
+  s.viewMode = 'orbit';
+  const fixed = migrate(s);
+  assert.equal(fixed.playerModel, 'male');
+  assert.equal(fixed.viewMode, 'first');
+});
+
 test('debounced save coalesces bursts into one write', async () => {
   let writes = 0;
   const debounced = createDebouncedSave(() => {

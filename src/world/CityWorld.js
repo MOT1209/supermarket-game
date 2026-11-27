@@ -1145,10 +1145,10 @@ export default class CityWorld {
       maxX: CITY_BOUNDS.maxX,
       minZ: CITY_BOUNDS.minZ,
       maxZ: CITY_BOUNDS.maxZ,
-      cell: 1,
-      // City walkers are slimmer than the player; a smaller inflation keeps
-      // 1 m cells from being swallowed around every kerbside prop.
-      radius: 0.28,
+      // Half-metre cells: at 1 m a single bench or bin consumed two whole
+      // cells and fenced the pavement off from the store forecourt.
+      cell: 0.5,
+      radius: 0.26,
       walkable: isWalkableGround,
       obstacles: this.colliders
     });

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { PRODUCTS } from '../data/products.js';
 import { labelTexture } from '../utils/textures.js';
 import { preloadModels } from '../utils/AssetLoader.js';
+import { disposeObject3D } from '../utils/dispose.js';
 import { shelfPosition } from '../data/build.js';
 
 // Geometry + material are shared per product, so refreshing a shelf never
@@ -171,4 +172,12 @@ export function createShelfMesh(shd, game) {
   game.world.tagInteract(g, 'shelf', shelfPrompt(shd));
   refreshShelfVisual(shd.spot, g, shd, game);
   return g;
+}
+
+// Product meshes reuse shared assets, so they are detached before the shelf's
+// own frame, label and textures are disposed.
+export function disposeShelfMesh(group) {
+  if (!group) return;
+  if (group.userData.products) group.remove(group.userData.products);
+  disposeObject3D(group);
 }

@@ -42,7 +42,6 @@ export default class UIManager {
     this.buildUI = new BuildUI(game);
     this.shopUI = new ShopUI(game);
     this.cityUI = new CityUI(game);
-    game.buildSystem && (game.buildSystem.ui = this.buildUI); // optional link
     this.cityUIOpen = false;
     this.bindStatic();
   }
@@ -96,7 +95,12 @@ export default class UIManager {
   syncMode(mode) {
     this.game.input?.touch?.setVisible(mode === 'playing');
     if (mode !== 'playing') this.hideLockError();
-    if (mode !== 'playing') this.buildUI?.hide?.();
+    if (mode === 'playing') {
+      // Resuming mid-build must bring the bar back with the still-active mode.
+      if (this.game.buildSystem?.enabled) this.buildUI?.show?.();
+    } else {
+      this.buildUI?.hide?.();
+    }
   }
 
   toggleCityUI() {

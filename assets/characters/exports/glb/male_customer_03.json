@@ -1,0 +1,79 @@
+{
+  "id": "male_customer_03",
+  "name": "Young Man",
+  "gender": "male",
+  "age_group": "young_adult",
+  "age": 22,
+  "height_m": 1.77,
+  "tris": 18370,
+  "verts": 9529,
+  "bones": 22,
+  "materials": 22,
+  "animations": [
+    "Checkout",
+    "Greet",
+    "Idle",
+    "IdleBasket",
+    "IdleCart",
+    "Inspect",
+    "LookAround",
+    "PickItem",
+    "PlaceItem",
+    "ReachHigh",
+    "Run",
+    "Stop",
+    "TurnLeft",
+    "TurnRight",
+    "Wait",
+    "Walk",
+    "WalkBasket",
+    "WalkCart"
+  ],
+  "carry": "basket",
+  "spawn_weight": 1.5,
+  "walk": {
+    "stride": 1.0,
+    "arm": 1.0,
+    "bounce": 1.0,
+    "stoop": 0.0,
+    "tempo": 1.0,
+    "basket_arms": {
+      "UpperArm_L": [
+        -0.78,
+        6.27,
+        0.0
+      ],
+      "UpperArm_R": [
+        -0.78,
+        -6.27,
+        0.0
+      ],
+      "LowerArm_L": [
+        -92.72,
+        12.0,
+        0.0
+      ],
+      "LowerArm_R": [
+        -92.72,
+        -12.0,
+        0.0
+      ],
+      "Hand_L": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "Hand_R": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  },
+  "grip_gap": 0.00010824791911077441,
+  "files": {
+    "blend": "assets/characters/blender_source/male_customer_03.blend",
+    "glb": "assets/characters/exports/glb/male_customer_03.glb",
+    "game_glb": "public/models/customers/male_customer_03.glb"
+  }
+}
