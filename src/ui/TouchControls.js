@@ -1,6 +1,6 @@
 import { TOUCH_LOOK_SCALE } from '../core/controls.js';
 
-const isTouchPointer = e => e.pointerType === 'touch' || e.pointerType === 'pen';
+const isTouchPointer = (e) => e.pointerType === 'touch' || e.pointerType === 'pen';
 
 export default class TouchControls {
   constructor(game, input) {
@@ -31,39 +31,46 @@ export default class TouchControls {
   bind() {
     const canvas = this.game.renderer.domElement;
 
-    this.el.zone?.addEventListener('pointerdown', e => this.onJoyDown(e));
-    this.el.zone?.addEventListener('pointermove', e => this.onJoyMove(e));
+    this.el.zone?.addEventListener('pointerdown', (e) => this.onJoyDown(e));
+    this.el.zone?.addEventListener('pointermove', (e) => this.onJoyMove(e));
     for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) {
-      this.el.zone?.addEventListener(type, e => this.onJoyEnd(e));
+      this.el.zone?.addEventListener(type, (e) => this.onJoyEnd(e));
     }
 
-    canvas.addEventListener('pointerdown', e => this.onLookDown(e));
-    canvas.addEventListener('pointermove', e => this.onLookMove(e));
+    canvas.addEventListener('pointerdown', (e) => this.onLookDown(e));
+    canvas.addEventListener('pointermove', (e) => this.onLookMove(e));
     for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) {
-      canvas.addEventListener(type, e => this.onLookEnd(e));
+      canvas.addEventListener(type, (e) => this.onLookEnd(e));
     }
-    canvas.addEventListener('contextmenu', e => { if (this.enabled) e.preventDefault(); });
+    canvas.addEventListener('contextmenu', (e) => {
+      if (this.enabled) e.preventDefault();
+    });
 
     this.bindButton(this.el.interact, () => this.game.onInteract());
     this.bindButton(this.el.drop, () => this.game.onDrop());
-    this.bindButton(this.el.sprint, () => {}, () => {
-      this.sprint = true;
-      this.el.sprint.classList.add('active');
-    }, () => {
-      this.sprint = false;
-      this.el.sprint.classList.remove('active');
-    });
+    this.bindButton(
+      this.el.sprint,
+      () => {},
+      () => {
+        this.sprint = true;
+        this.el.sprint.classList.add('active');
+      },
+      () => {
+        this.sprint = false;
+        this.el.sprint.classList.remove('active');
+      }
+    );
   }
 
   bindButton(el, onPress, onDown = onPress, onUp = null) {
     if (!el) return;
-    el.addEventListener('pointerdown', e => {
+    el.addEventListener('pointerdown', (e) => {
       if (!this.enabled || this.game.mode !== 'playing' || !isTouchPointer(e)) return;
       e.preventDefault();
       this.capture(el, e.pointerId);
       onDown(e);
     });
-    const release = e => {
+    const release = (e) => {
       if (!this.enabled) return;
       this.release(el, e.pointerId);
       if (onUp) onUp(e);
@@ -74,11 +81,19 @@ export default class TouchControls {
   }
 
   capture(el, pointerId) {
-    try { el.setPointerCapture(pointerId); } catch { /* synthetic pointers may not be capturable */ }
+    try {
+      el.setPointerCapture(pointerId);
+    } catch {
+      /* synthetic pointers may not be capturable */
+    }
   }
 
   release(el, pointerId) {
-    try { if (el.hasPointerCapture?.(pointerId)) el.releasePointerCapture(pointerId); } catch { /* no-op */ }
+    try {
+      if (el.hasPointerCapture?.(pointerId)) el.releasePointerCapture(pointerId);
+    } catch {
+      /* no-op */
+    }
   }
 
   onJoyDown(e) {
@@ -101,12 +116,14 @@ export default class TouchControls {
     let x = (e.clientX - (r.left + radius)) / radius;
     let z = (e.clientY - (r.top + radius)) / radius;
     const length = Math.hypot(x, z);
-    if (length > 1) { x /= length; z /= length; }
+    if (length > 1) {
+      x /= length;
+      z /= length;
+    }
     this.axes.x = x;
     this.axes.z = z;
     if (this.el.knob) {
-      this.el.knob.style.transform =
-        `translate(calc(-50% + ${x * radius * 0.5}px), calc(-50% + ${z * radius * 0.5}px))`;
+      this.el.knob.style.transform = `translate(calc(-50% + ${x * radius * 0.5}px), calc(-50% + ${z * radius * 0.5}px))`;
     }
   }
 
@@ -127,7 +144,8 @@ export default class TouchControls {
   }
 
   onLookMove(e) {
-    if (!this.lookPointer || e.pointerId !== this.lookPointer.id || this.game.mode !== 'playing') return;
+    if (!this.lookPointer || e.pointerId !== this.lookPointer.id || this.game.mode !== 'playing')
+      return;
     e.preventDefault();
     const dx = e.clientX - this.lookPointer.x;
     const dy = e.clientY - this.lookPointer.y;

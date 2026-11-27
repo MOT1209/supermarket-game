@@ -26,7 +26,10 @@ export function interact(game) {
   if (!o) return;
   const it = o.userData.interact;
 
-  if (it.type === 'terminal') { game.ui.openTerminal(); return; }
+  if (it.type === 'terminal') {
+    game.ui.openTerminal();
+    return;
+  }
 
   if (it.type === 'register') {
     const c = waitingCustomer(game);
@@ -53,19 +56,22 @@ export function interact(game) {
   }
 
   if (it.type === 'box') {
-    if (game.runtime.carried) { game.ui.toast('Hands full'); return; }
-    const b = game.runtime.boxes.find(x => x.group === o);
+    if (game.runtime.carried) {
+      game.ui.toast('Hands full');
+      return;
+    }
+    const b = game.runtime.boxes.find((x) => x.group === o);
     if (!b) return;
     game.runtime.carried = b;
     b.group.position.set(0, 0, 0);
     b.group.rotation.set(0, 0, 0);
-    game.world.interactables = game.world.interactables.filter(x => x !== b.group);
+    game.world.interactables = game.world.interactables.filter((x) => x !== b.group);
     game.audio.play('pick');
     return;
   }
 
   if (it.type === 'shelf') {
-    const sh = game.runtime.shelves.find(s => s.group === o);
+    const sh = game.runtime.shelves.find((s) => s.group === o);
     if (!sh) return;
     const carried = game.runtime.carried;
     if (carried && !carried.trash) {
@@ -74,7 +80,10 @@ export function interact(game) {
         return;
       }
       const add = Math.min(carried.qty, sh.capacity - sh.stock);
-      if (add <= 0) { game.ui.toast('Shelf is full'); return; }
+      if (add <= 0) {
+        game.ui.toast('Shelf is full');
+        return;
+      }
       sh.stock += add;
       carried.qty -= add;
       refreshShelfVisual(sh.spot, sh.group, sh, game);
@@ -104,11 +113,14 @@ export function updatePrompt(game, o) {
   }
   let txt = o.userData.interact.prompt;
   if (o.userData.interact.type === 'shelf') {
-    const sh = game.runtime.shelves.find(s => s.group === o);
+    const sh = game.runtime.shelves.find((s) => s.group === o);
     if (sh) txt = shelfPrompt(sh);
   } else if (o.userData.interact.type === 'box') {
-    const b = game.runtime.boxes.find(x => x.group === o);
-    if (b) txt = b.trash ? 'Empty box — carry to dumpster' : `${PRODUCTS[b.productId].name} box (${b.qty}) — E to pick up`;
+    const b = game.runtime.boxes.find((x) => x.group === o);
+    if (b)
+      txt = b.trash
+        ? 'Empty box — carry to dumpster'
+        : `${PRODUCTS[b.productId].name} box (${b.qty}) — E to pick up`;
   }
   game.ui.setPrompt(`[E] ${txt}`);
 }

@@ -1,6 +1,10 @@
 import * as THREE from 'three';
 import {
-  SHELF_SPOTS, DAY_SECONDS, PRODUCTS, WAGE_RESTOCKER, WAGE_CASHIER
+  SHELF_SPOTS,
+  DAY_SECONDS,
+  PRODUCTS,
+  WAGE_RESTOCKER,
+  WAGE_CASHIER
 } from '../data/products.js';
 import { clamp, rounded } from '../utils/math.js';
 import { loadGame, saveGame, defaultState, deleteSave } from './SaveSystem.js';
@@ -9,7 +13,11 @@ import AudioManager from './Audio.js';
 import Input from './Input.js';
 import Lighting from '../world/Lighting.js';
 import StoreWorld from '../world/StoreWorld.js';
-import { createShelfMesh, refreshShelfVisual, preloadProductModels } from '../world/ShelfFactory.js';
+import {
+  createShelfMesh,
+  refreshShelfVisual,
+  preloadProductModels
+} from '../world/ShelfFactory.js';
 import Player from '../entities/Player.js';
 import { spawnCustomer, updateCustomers, clearCustomers } from '../entities/Customer.js';
 import { updateStaff, resetStaffTimers } from '../entities/Staff.js';
@@ -22,9 +30,10 @@ import { spawnRate } from '../systems/Reputation.js';
 import { evaluateObjective } from '../systems/Objectives.js';
 import { dayRecord } from '../systems/Analytics.js';
 import { checkAchievements } from '../systems/Achievements.js';
+import { WebGLGuard, WEBGL_LOST } from './WebGLGuard.js';
 
 export default class Game {
-  constructor() {
+  constructor(webglGuard = new WebGLGuard()) {
     this.mode = 'start';
     this.toastTimer = 0;
     this.lastTime = performance.now();
@@ -39,6 +48,10 @@ export default class Game {
     this.renderer.toneMappingExposure = 1.15;
     document.getElementById('app').appendChild(this.renderer.domElement);
 
+    this.webgl = webglGuard;
+    this.renderer.domElement.addEventListener('webglcontextlost', (e) => this.webgl.lost(e));
+    this.renderer.domElement.addEventListener('webglcontextrestored', () => this.webgl.restored());
+
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, 0.1, 200);
     this.camera.rotation.order = 'YXZ';
@@ -48,8 +61,11 @@ export default class Game {
     this.runtime = {
       elapsed: this.state.clock || 0,
       stats: { revenue: 0, stockCost: 0, happy: 0, angry: 0, recycle: 0 },
-      shelves: [], boxes: [], customers: [],
-      carried: null, checkoutCustomer: null
+      shelves: [],
+      boxes: [],
+      customers: [],
+      carried: null,
+      checkoutCustomer: null
     };
 
     this.audio = new AudioManager();
@@ -128,10 +144,14 @@ export default class Game {
     }
     this.renderer.shadowMap.needsUpdate = true;
     // Materials need a nudge to notice the shadow toggle.
-    this.scene.traverse(o => { if (o.isMesh && o.material) o.material.needsUpdate = true; });
+    this.scene.traverse((o) => {
+      if (o.isMesh && o.material) o.material.needsUpdate = true;
+    });
   }
 
-  spot(i) { return SHELF_SPOTS[i]; }
+  spot(i) {
+    return SHELF_SPOTS[i];
+  }
 
   boot() {
     this.world.build();
@@ -140,8 +160,10 @@ export default class Game {
       this.runtime.shelves.push({ ...shd, group });
     }
     preloadProductModels()
-      .then(() => this.runtime.shelves.forEach(sh => refreshShelfVisual(sh.spot, sh.group, sh, this)))
-      .catch(err => console.warn('[Game] Product GLB refresh skipped.', err));
+      .then(() =>
+        this.runtime.shelves.forEach((sh) => refreshShelfVisual(sh.spot, sh.group, sh, this))
+      )
+      .catch((err) => console.warn('[Game] Product GLB refresh skipped.', err));
     this.world.rebuildColliders();
     spawnDelivery(this);
     this.lastAutosave = performance.now();
@@ -152,14 +174,17 @@ export default class Game {
     this.pendingAchievements = checkAchievements(this.state);
     if (this.pendingAchievements.length) this.save(false, true);
     this.camera.position.copy(this.player.pos);
-    requestAnimationFrame(t => this.animate(t));
+    requestAnimationFrame((t) => this.animate(t));
   }
 
   animate(now) {
-    requestAnimationFrame(t => this.animate(t));
+    requestAnimationFrame((t) => this.animate(t));
     // Don't burn CPU/GPU on a tab the player can't see; also avoids a large
     // dt spike when the tab becomes visible again.
-    if (document.hidden) { this.lastTime = now; return; }
+    if (document.hidden) {
+      this.lastTime = now;
+      return;
+    }
     const dt = Math.min(0.05, (now - this.lastTime) / 1000);
     this.lastTime = now;
 
@@ -176,17 +201,26 @@ export default class Game {
       this.toastTimer -= dt;
       if (this.toastTimer <= 0) this.ui.el.msg.style.opacity = 0;
     }
-    this.ui.updateCarry(this.runtime.carried
-      ? (this.runtime.carried.trash
-        ? '♻ Carrying empty box (take to dumpster)'
-        : `📦 Carrying ${PRODUCTS[this.runtime.carried.productId].name} box (${this.runtime.carried.qty})`)
-      : '');
+    this.ui.updateCarry(
+      this.runtime.carried
+        ? this.runtime.carried.trash
+          ? '♻ Carrying empty box (take to dumpster)'
+          : `📦 Carrying ${PRODUCTS[this.runtime.carried.productId].name} box (${this.runtime.carried.qty})`
+        : ''
+    );
     if (this.mode === 'playing' && now - this.lastAutosave > 20000) {
       this.lastAutosave = now;
       this.announceAchievements(checkAchievements(this.state, this.runtime.stats));
       this.save(false);
     }
-    this.renderer.render(this.scene, this.camera);
+    // A lost context cannot render; Three.js rebuilds its resources on restore.
+    if (this.webgl.status !== WEBGL_LOST) this.renderer.render(this.scene, this.camera);
+  }
+
+  resumeAfterContextRestore() {
+    this.lastTime = performance.now();
+    this.renderer.setSize(innerWidth, innerHeight);
+    this.renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   }
 
   updateClock(dt) {
@@ -194,7 +228,8 @@ export default class Game {
     this.state.clock = this.runtime.elapsed;
     const t = clamp(this.runtime.elapsed / DAY_SECONDS, 0, 1);
     const minutes = 8 * 60 + t * 13 * 60;
-    const h = Math.floor(minutes / 60), m = Math.floor(minutes % 60);
+    const h = Math.floor(minutes / 60),
+      m = Math.floor(minutes % 60);
     const ap = h >= 12 ? 'PM' : 'AM';
     const hh = h % 12 || 12;
     this.ui.updateClock(`${hh}:${String(m).padStart(2, '0')} ${ap}`, this.state.day);
@@ -203,7 +238,9 @@ export default class Game {
     else if (Math.random() < dt * spawnRate(this)) spawnCustomer(this);
   }
 
-  onInteract() { interact(this); }
+  onInteract() {
+    interact(this);
+  }
 
   onDrop() {
     const box = this.runtime.carried;
@@ -234,9 +271,9 @@ export default class Game {
   }
 
   syncShelfData() {
-    this.state.shelves = this.state.shelves.map(d => ({ ...d }));
-    this.runtime.shelves.forEach(sh => {
-      const d = this.state.shelves.find(x => x.spot === sh.spot);
+    this.state.shelves = this.state.shelves.map((d) => ({ ...d }));
+    this.runtime.shelves.forEach((sh) => {
+      const d = this.state.shelves.find((x) => x.spot === sh.spot);
       if (d) d.stock = sh.stock;
     });
   }
@@ -278,7 +315,8 @@ export default class Game {
     const record = dayRecord(this.state, st, { net });
     if (!Array.isArray(this.state.history)) this.state.history = [];
     this.state.history.push(record);
-    if (this.state.history.length > 60) this.state.history.splice(0, this.state.history.length - 60);
+    if (this.state.history.length > 60)
+      this.state.history.splice(0, this.state.history.length - 60);
     const earned = checkAchievements(this.state, null, record);
     if (this.state.cash < WAGE_RESTOCKER) this.state.staff.restocker = false;
     if (this.state.cash < WAGE_CASHIER) this.state.staff.cashier = false;

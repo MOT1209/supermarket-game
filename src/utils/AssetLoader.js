@@ -8,7 +8,7 @@ const cache = new Map();
 const base = (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) || '/';
 
 function prepare(root) {
-  root.traverse(obj => {
+  root.traverse((obj) => {
     if (obj.isMesh) {
       obj.castShadow = true;
       obj.receiveShadow = true;
@@ -20,12 +20,16 @@ function prepare(root) {
 export function loadModel(file) {
   if (!cache.has(file)) {
     const url = `${base}models/${file}`;
-    cache.set(file, loader.loadAsync(url)
-      .then(gltf => prepare(gltf.scene))
-      .catch(err => {
-        console.warn(`[AssetLoader] Could not load ${url}; using procedural fallback.`, err);
-        return null;
-      }));
+    cache.set(
+      file,
+      loader
+        .loadAsync(url)
+        .then((gltf) => prepare(gltf.scene))
+        .catch((err) => {
+          console.warn(`[AssetLoader] Could not load ${url}; using procedural fallback.`, err);
+          return null;
+        })
+    );
   }
   return cache.get(file);
 }

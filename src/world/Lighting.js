@@ -12,10 +12,18 @@ export default class Lighting {
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(1024, 1024);
     const cam = this.sun.shadow.camera;
-    cam.left = -22; cam.right = 22; cam.top = 22; cam.bottom = -22;
+    cam.left = -22;
+    cam.right = 22;
+    cam.top = 22;
+    cam.bottom = -22;
     scene.add(this.sun);
 
-    for (const [x, z] of [[-6, -5], [6, -5], [-6, 4], [6, 4]]) {
+    for (const [x, z] of [
+      [-6, -5],
+      [6, -5],
+      [-6, 4],
+      [6, 4]
+    ]) {
       const l = new THREE.PointLight(0xfff0c0, 0, 16, 2);
       l.position.set(x, 4.4, z);
       scene.add(l);

@@ -2,9 +2,24 @@
 // extra state is needed; the reward is paid at closing.
 
 const CYCLE = [
-  { metric: 'happy',   unit: 'customers', make: day => 6 + day * 2,           label: n => `Serve ${n} happy customers` },
-  { metric: 'revenue', unit: '$',         make: day => 200 + day * 60,        label: n => `Earn $${Math.round(n)} in sales` },
-  { metric: 'recycle', unit: 'boxes',     make: day => 2 + Math.floor(day/2), label: n => `Recycle ${n} empty boxes` }
+  {
+    metric: 'happy',
+    unit: 'customers',
+    make: (day) => 6 + day * 2,
+    label: (n) => `Serve ${n} happy customers`
+  },
+  {
+    metric: 'revenue',
+    unit: '$',
+    make: (day) => 200 + day * 60,
+    label: (n) => `Earn $${Math.round(n)} in sales`
+  },
+  {
+    metric: 'recycle',
+    unit: 'boxes',
+    make: (day) => 2 + Math.floor(day / 2),
+    label: (n) => `Recycle ${n} empty boxes`
+  }
 ];
 
 export function objectiveFor(day) {
@@ -16,9 +31,8 @@ export function objectiveFor(day) {
     target,
     text: def.label(target),
     // recycle is tracked in dollars (RECYCLE_BONUS each), convert to boxes
-    value: stats => def.metric === 'recycle'
-      ? Math.round((stats.recycle || 0) / 0.5)
-      : (stats[def.metric] || 0)
+    value: (stats) =>
+      def.metric === 'recycle' ? Math.round((stats.recycle || 0) / 0.5) : stats[def.metric] || 0
   };
 }
 

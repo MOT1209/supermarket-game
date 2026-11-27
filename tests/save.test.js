@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { defaultState, migrate, saveGame, loadGame } from '../src/core/SaveSystem.js';
+import { defaultState, migrate } from '../src/core/SaveSystem.js';
 import { createDebouncedSave } from '../src/core/saveScheduler.js';
 
-const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 test('migrate keeps valid fields from a current save', () => {
   const s = defaultState();
@@ -49,7 +49,9 @@ test('migrate clamps settings and rejects unknown graphics modes', () => {
 
 test('debounced save coalesces bursts into one write', async () => {
   let writes = 0;
-  const debounced = createDebouncedSave(() => { writes++; }, 20);
+  const debounced = createDebouncedSave(() => {
+    writes++;
+  }, 20);
   debounced.schedule();
   debounced.schedule();
   debounced.schedule();
@@ -60,7 +62,9 @@ test('debounced save coalesces bursts into one write', async () => {
 
 test('debounced flush writes immediately and cancels the pending timer', async () => {
   let writes = 0;
-  const debounced = createDebouncedSave(() => { writes++; }, 20);
+  const debounced = createDebouncedSave(() => {
+    writes++;
+  }, 20);
   debounced.schedule();
   assert.equal(debounced.flush(), true);
   assert.equal(writes, 1);
@@ -71,7 +75,9 @@ test('debounced flush writes immediately and cancels the pending timer', async (
 
 test('debounced cancel discards a pending write', async () => {
   let writes = 0;
-  const debounced = createDebouncedSave(() => { writes++; }, 20);
+  const debounced = createDebouncedSave(() => {
+    writes++;
+  }, 20);
   debounced.schedule();
   debounced.cancel();
   await sleep(60);

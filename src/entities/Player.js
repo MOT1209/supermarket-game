@@ -17,17 +17,19 @@ export default class Player {
 
   attachViewModel() {
     // Non-arm parts are hidden so the model never blocks the centre of the view.
-    cloneModel('player.glb').then(model => {
-      if (!model) return;
-      model.traverse(mesh => {
-        if (mesh.isMesh && !mesh.name.startsWith('arm_')) mesh.visible = false;
-      });
-      model.scale.setScalar(0.9);
-      model.rotation.x = -Math.PI / 2;
-      model.position.set(0, -0.85, -1.0);
-      this.game.camera.add(model);
-      this.viewModel = model;
-    }).catch(err => console.warn('[Player] Player GLB viewmodel skipped.', err));
+    cloneModel('player.glb')
+      .then((model) => {
+        if (!model) return;
+        model.traverse((mesh) => {
+          if (mesh.isMesh && !mesh.name.startsWith('arm_')) mesh.visible = false;
+        });
+        model.scale.setScalar(0.9);
+        model.rotation.x = -Math.PI / 2;
+        model.position.set(0, -0.85, -1.0);
+        this.game.camera.add(model);
+        this.viewModel = model;
+      })
+      .catch((err) => console.warn('[Player] Player GLB viewmodel skipped.', err));
   }
 
   update(dt) {
@@ -45,14 +47,20 @@ export default class Player {
     const moving = axes.x * axes.x + axes.z * axes.z > 0.01;
     if (moving) this.bob += dt * (sprint ? 14 : 9);
     const y = 1.7 + (moving ? Math.sin(this.bob) * 0.035 : 0);
-    if (this.viewModel) this.viewModel.position.y = -0.85 + (moving ? Math.sin(this.bob * 0.5) * 0.02 : 0);
+    if (this.viewModel)
+      this.viewModel.position.y = -0.85 + (moving ? Math.sin(this.bob * 0.5) * 0.02 : 0);
     this.game.camera.position.set(this.pos.x, y, this.pos.z);
     this.game.camera.rotation.set(this.pitch, this.yaw, 0);
 
     const carried = this.game.runtime.carried;
     if (carried) {
-      const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(this.game.camera.quaternion).multiplyScalar(1.3);
-      carried.group.position.copy(this.game.camera.position).add(dir).add(new THREE.Vector3(0, -0.5, 0));
+      const dir = new THREE.Vector3(0, 0, -1)
+        .applyQuaternion(this.game.camera.quaternion)
+        .multiplyScalar(1.3);
+      carried.group.position
+        .copy(this.game.camera.position)
+        .add(dir)
+        .add(new THREE.Vector3(0, -0.5, 0));
       carried.group.rotation.set(0, this.yaw, 0);
     }
   }

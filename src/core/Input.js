@@ -1,11 +1,22 @@
 import {
-  clampPitch, describeLockError, isEditableTarget, isSprinting,
-  normalizeKey, readAxes
+  clampPitch,
+  describeLockError,
+  isEditableTarget,
+  isSprinting,
+  normalizeKey,
+  readAxes
 } from './controls.js';
 import TouchControls from '../ui/TouchControls.js';
 
 const MOVEMENT_KEYS = new Set([
-  'w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'
+  'w',
+  'a',
+  's',
+  'd',
+  'arrowup',
+  'arrowdown',
+  'arrowleft',
+  'arrowright'
 ]);
 const ACTION_KEYS = new Set(['e', 'q', 'l']);
 
@@ -19,18 +30,20 @@ export default class Input {
     this.attach();
   }
 
-  get wantsPointerLock() { return !this.touch.enabled; }
+  get wantsPointerLock() {
+    return !this.touch.enabled;
+  }
 
   attach() {
-    addEventListener('keydown', e => this.onKeyDown(e));
-    addEventListener('keyup', e => this.onKeyUp(e));
+    addEventListener('keydown', (e) => this.onKeyDown(e));
+    addEventListener('keyup', (e) => this.onKeyUp(e));
     addEventListener('blur', () => this.onFocusLost());
     addEventListener('focus', () => this.clearKeys());
     addEventListener('pagehide', () => this.onFocusLost());
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) this.onFocusLost();
     });
-    addEventListener('mousemove', e => this.onMouseMove(e));
+    addEventListener('mousemove', (e) => this.onMouseMove(e));
     document.addEventListener('pointerlockchange', () => this.onLockChange());
     document.addEventListener('pointerlockerror', () => {
       this.onLockError({ name: 'NotAllowedError' });
@@ -147,7 +160,8 @@ export default class Input {
     }
     try {
       const result = el.requestPointerLock();
-      if (result && typeof result.catch === 'function') result.catch(err => this.onLockError(err));
+      if (result && typeof result.catch === 'function')
+        result.catch((err) => this.onLockError(err));
       return true;
     } catch (err) {
       this.onLockError(err);
@@ -164,6 +178,6 @@ export default class Input {
   }
 
   isDown(...keys) {
-    return keys.some(k => this.keys[normalizeKey(k)]);
+    return keys.some((k) => this.keys[normalizeKey(k)]);
   }
 }

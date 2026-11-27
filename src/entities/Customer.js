@@ -8,9 +8,13 @@ import { makeCustomerModel, animateCustomer } from './CustomerModel.js';
 import { refreshShelfVisual } from '../world/ShelfFactory.js';
 
 function makeEmoji() {
-  const s = new THREE.Sprite(new THREE.SpriteMaterial({
-    map: emojiTexture('😊'), transparent: true, depthTest: false
-  }));
+  const s = new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      map: emojiTexture('😊'),
+      transparent: true,
+      depthTest: false
+    })
+  );
   s.scale.set(0.9, 0.9, 1);
   s.position.y = 2.5;
   s.visible = false;
@@ -18,11 +22,11 @@ function makeEmoji() {
 }
 
 function disposeGroup(group) {
-  group.traverse(o => {
+  group.traverse((o) => {
     if (o.geometry) o.geometry.dispose();
     if (o.material) {
       const mats = Array.isArray(o.material) ? o.material : [o.material];
-      mats.forEach(m => {
+      mats.forEach((m) => {
         if (m.map) m.map.dispose();
         m.dispose();
       });
@@ -48,26 +52,44 @@ export function spawnCustomer(game) {
   g.scale.setScalar(rand(0.92, 1.08));
   game.scene.add(g);
   game.runtime.customers.push({
-    group: g, rig: model.rig,
-    armL: model.armL, armR: model.armR, legL: model.legL, legR: model.legR,
-    emoji, state: 'enter', timer: 0, basket: [], queueIndex: -1,
-    emojiTimer: 0, visits: 0, moving: false, walkPhase: rand(0, 6),
+    group: g,
+    rig: model.rig,
+    armL: model.armL,
+    armR: model.armR,
+    legL: model.legL,
+    legR: model.legR,
+    emoji,
+    state: 'enter',
+    timer: 0,
+    basket: [],
+    queueIndex: -1,
+    emojiTimer: 0,
+    visits: 0,
+    moving: false,
+    walkPhase: rand(0, 6),
     // Shoppers have a favourite aisle; buying from it makes them happier.
     pref: pick(CATEGORIES),
     // Seconds they will wait in the checkout queue before leaving angry.
     patience: rand(22, 40),
-    prefFound: false
+    prefFound: false,
+    // A fixed target outside the entrance, chosen once. Re-rolling this every
+    // frame made leaving shoppers jitter and never actually despawn.
+    exitTarget: { x: rand(-1.6, 1.6), z: 16.5 }
   });
 }
 
 function moveToward(c, tx, tz, speed, dt) {
   const g = c.group;
-  const dx = tx - g.position.x, dz = tz - g.position.z;
+  const dx = tx - g.position.x,
+    dz = tz - g.position.z;
   const d = Math.hypot(dx, dz);
-  if (d < 0.15) { c.moving = false; return true; }
+  if (d < 0.15) {
+    c.moving = false;
+    return true;
+  }
   const step = Math.min(d, speed * dt);
-  g.position.x += dx / d * step;
-  g.position.z += dz / d * step;
+  g.position.x += (dx / d) * step;
+  g.position.z += (dz / d) * step;
   g.rotation.y = Math.atan2(dx, dz);
   c.moving = true;
   return false;
@@ -92,8 +114,9 @@ export function reindexQueue(game) {
 }
 
 export function waitingCustomer(game) {
-  const w = game.runtime.customers.filter(c =>
-    (c.state === 'wait' || c.state === 'queue') && c.queueIndex === 0);
+  const w = game.runtime.customers.filter(
+    (c) => (c.state === 'wait' || c.state === 'queue') && c.queueIndex === 0
+  );
   return w.length ? w[0] : null;
 }
 
@@ -126,12 +149,13 @@ export function updateCustomers(game, dt) {
 
     if (c.state === 'enter') {
       if (moveToward(c, pick([-4, -2, 0, 2, 4]), 7, 1.9, dt)) {
-        c.state = 'browse'; c.timer = 0;
+        c.state = 'browse';
+        c.timer = 0;
       }
     } else if (c.state === 'browse') {
       c.timer -= dt;
       if (c.timer <= 0) {
-        const available = runtime.shelves.filter(s => s.stock > 0);
+        const available = runtime.shelves.filter((s) => s.stock > 0);
         if (available.length === 0) {
           showEmoji(c, '❓', 2.5);
           runtime.stats.angry++;
@@ -139,11 +163,12 @@ export function updateCustomers(game, dt) {
           c.state = 'angry';
           game.audio.play('error');
         } else if (c.visits >= 3) {
-          c.state = 'queue'; c.timer = 0;
+          c.state = 'queue';
+          c.timer = 0;
           if (basketTotal(game, c) > 15) showEmoji(c, '😠', 3);
         } else {
           // Prefer the customer's favourite aisle when it is in stock.
-          const prefAvail = available.filter(s => PRODUCTS[s.productId].category === c.pref);
+          const prefAvail = available.filter((s) => PRODUCTS[s.productId].category === c.pref);
           const sh = pick(prefAvail.length ? prefAvail : available);
           const [sx, sz] = game.spot(sh.spot);
           c.browseTarget = [sx, sz + 1.3, sh];
@@ -153,7 +178,7 @@ export function updateCustomers(game, dt) {
     } else if (c.state === 'toShelf') {
       const t = c.browseTarget;
       if (moveToward(c, t[0], t[1], 1.9, dt)) {
-        const sh = runtime.shelves.find(s => s === t[2]);
+        const sh = runtime.shelves.find((s) => s === t[2]);
         if (sh && sh.stock > 0) {
           sh.stock--;
           refreshShelfVisual(sh.spot, sh.group, sh, game);
@@ -163,12 +188,15 @@ export function updateCustomers(game, dt) {
           game.audio.play('scan');
           c.visits++;
         }
-        c.state = 'browse'; c.timer = rand(0.8, 1.6);
+        c.state = 'browse';
+        c.timer = rand(0.8, 1.6);
       }
     } else if (c.state === 'queue') {
-      if (c.queueIndex < 0) c.queueIndex = runtime.customers.filter(x => x.state === 'queue' && x !== c).length;
+      if (c.queueIndex < 0)
+        c.queueIndex = runtime.customers.filter((x) => x.state === 'queue' && x !== c).length;
       if (moveToward(c, 7, 6.2 - c.queueIndex * 1.1, 1.8, dt)) {
-        c.state = 'wait'; c.timer = 0;
+        c.state = 'wait';
+        c.timer = 0;
       }
     } else if (c.state === 'wait') {
       // Run out of patience while queueing -> leave unhappy.
@@ -187,7 +215,8 @@ export function updateCustomers(game, dt) {
         if (c.timer > 1.4) doAutoCheckout(game, c);
       }
     } else if (c.state === 'happy' || c.state === 'angry') {
-      if (moveToward(c, rand(-1, 1), 16, 2.6, dt)) {
+      const exit = c.exitTarget || { x: 0, z: 16.5 };
+      if (moveToward(c, exit.x, exit.z, 2.6, dt)) {
         game.scene.remove(c.group);
         disposeGroup(c.group);
         runtime.customers.splice(i, 1);

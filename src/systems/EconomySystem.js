@@ -1,7 +1,13 @@
 import {
-  PRODUCTS, LICENSES, BOX_COST_MULTIPLIER, SHELF_CAPACITY,
-  maxSpots, WAGE_RESTOCKER, WAGE_CASHIER,
-  RENT_PER_DAY, FRIDGE_UPKEEP
+  PRODUCTS,
+  LICENSES,
+  BOX_COST_MULTIPLIER,
+  SHELF_CAPACITY,
+  maxSpots,
+  WAGE_RESTOCKER,
+  WAGE_CASHIER,
+  RENT_PER_DAY,
+  FRIDGE_UPKEEP
 } from '../data/products.js';
 import { rand, rounded } from '../utils/math.js';
 import { createShelfMesh } from '../world/ShelfFactory.js';
@@ -9,7 +15,11 @@ import { spawnOneBox } from './DeliverySystem.js';
 
 export function orderBox(game, pid) {
   const cost = rounded(game.state.prices[pid] * BOX_COST_MULTIPLIER);
-  if (game.state.cash < cost) { game.ui.toast('Not enough cash'); game.audio.play('error'); return; }
+  if (game.state.cash < cost) {
+    game.ui.toast('Not enough cash');
+    game.audio.play('error');
+    return;
+  }
   game.state.cash = rounded(game.state.cash - cost);
   game.runtime.stats.stockCost += cost;
   spawnOneBox(game, pid);
@@ -20,9 +30,12 @@ export function orderBox(game, pid) {
 }
 
 export function buyLicense(game, id) {
-  const l = LICENSES.find(x => x.id === id);
+  const l = LICENSES.find((x) => x.id === id);
   if (!l || game.state.licenses.includes(id)) return;
-  if (game.state.cash < l.cost) { game.ui.toast('Not enough cash'); return; }
+  if (game.state.cash < l.cost) {
+    game.ui.toast('Not enough cash');
+    return;
+  }
   game.state.cash = rounded(game.state.cash - l.cost);
   game.state.licenses.push(id);
   if (game.state.shelves.length < maxSpots(game.state.level)) {
@@ -39,8 +52,11 @@ export function buyLicense(game, id) {
 export function addShelf(game, pid, fridge) {
   if (game.state.shelves.length >= maxSpots(game.state.level)) return null;
   const shd = {
-    productId: pid, stock: 0, capacity: SHELF_CAPACITY,
-    spot: game.state.shelves.length, fridge
+    productId: pid,
+    stock: 0,
+    capacity: SHELF_CAPACITY,
+    spot: game.state.shelves.length,
+    fridge
   };
   game.state.shelves.push({ ...shd });
   const group = createShelfMesh(shd, game);
@@ -52,14 +68,22 @@ export function addShelf(game, pid, fridge) {
 export function buyFurniture(game, type) {
   const cost = type === 'shelf' ? 150 : 280;
   if (game.state.shelves.length >= maxSpots(game.state.level)) {
-    game.ui.toast('Expand your store first'); return;
+    game.ui.toast('Expand your store first');
+    return;
   }
-  if (game.state.cash < cost) { game.ui.toast('Not enough cash'); return; }
+  if (game.state.cash < cost) {
+    game.ui.toast('Not enough cash');
+    return;
+  }
   const sel = document.getElementById('newShelfProduct');
   const requested = sel ? sel.value : 'milk';
-  const pid = PRODUCTS[requested] && (!PRODUCTS[requested].license || game.state.licenses.includes(PRODUCTS[requested].license))
-    ? requested
-    : Object.keys(PRODUCTS).find(k => !PRODUCTS[k].license || game.state.licenses.includes(PRODUCTS[k].license));
+  const pid =
+    PRODUCTS[requested] &&
+    (!PRODUCTS[requested].license || game.state.licenses.includes(PRODUCTS[requested].license))
+      ? requested
+      : Object.keys(PRODUCTS).find(
+          (k) => !PRODUCTS[k].license || game.state.licenses.includes(PRODUCTS[k].license)
+        );
   game.state.cash = rounded(game.state.cash - cost);
   addShelf(game, pid, type === 'fridge');
   game.audio.play('cash');
@@ -70,7 +94,10 @@ export function buyFurniture(game, type) {
 
 export function expandStore(game) {
   const cost = 400 * game.state.level;
-  if (game.state.cash < cost) { game.ui.toast('Not enough cash'); return; }
+  if (game.state.cash < cost) {
+    game.ui.toast('Not enough cash');
+    return;
+  }
   game.state.cash = rounded(game.state.cash - cost);
   game.state.level++;
   game.audio.play('success');
@@ -81,7 +108,10 @@ export function expandStore(game) {
 
 export function hire(game, role) {
   const wage = role === 'restocker' ? WAGE_RESTOCKER : WAGE_CASHIER;
-  if (game.state.cash < wage) { game.ui.toast('Not enough cash'); return; }
+  if (game.state.cash < wage) {
+    game.ui.toast('Not enough cash');
+    return;
+  }
   game.state.staff[role] = true;
   game.audio.play('success');
   game.ui.toast('Staff hired!');
@@ -113,6 +143,6 @@ export function wages(game) {
 
 // Rent + per-fridge utilities, charged when the store closes.
 export function operatingCost(game) {
-  const fridges = game.state.shelves.filter(s => s.fridge).length;
+  const fridges = game.state.shelves.filter((s) => s.fridge).length;
   return RENT_PER_DAY + fridges * FRIDGE_UPKEEP;
 }

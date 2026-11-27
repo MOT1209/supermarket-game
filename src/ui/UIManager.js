@@ -4,11 +4,28 @@ import SummaryUI from './SummaryUI.js';
 import PauseUI from './PauseUI.js';
 
 const IDs = [
-  'loading', 'hud', 'prompt', 'cashText', 'timeText', 'clockBox', 'carry', 'msg',
+  'loading',
+  'hud',
+  'prompt',
+  'cashText',
+  'timeText',
+  'clockBox',
+  'carry',
+  'msg',
   'repText',
-  'startOverlay', 'pauseOverlay', 'terminalOverlay', 'checkoutOverlay', 'summaryOverlay',
-  'tabContent', 'sensVal', 'termCash', 'checkoutBody', 'summaryBody', 'sumDay',
-  'lockBar', 'lockMsg'
+  'startOverlay',
+  'pauseOverlay',
+  'terminalOverlay',
+  'checkoutOverlay',
+  'summaryOverlay',
+  'tabContent',
+  'sensVal',
+  'termCash',
+  'checkoutBody',
+  'summaryBody',
+  'sumDay',
+  'lockBar',
+  'lockMsg'
 ];
 
 export default class UIManager {
@@ -23,7 +40,7 @@ export default class UIManager {
   }
 
   bindStatic() {
-    const g = this.game, el = this.el;
+    const g = this.game;
     document.getElementById('startBtn').onclick = () => {
       g.audio.init();
       this.updateHUD();
@@ -39,11 +56,16 @@ export default class UIManager {
     document.getElementById('resetBtn').onclick = () => {
       if (confirm('Reset all saved progress?')) g.newGame();
     };
-    document.getElementById('closeBtn').onclick = () => { if (g.mode === 'playing') g.closeStore(); };
+    document.getElementById('closeBtn').onclick = () => {
+      if (g.mode === 'playing') g.closeStore();
+    };
     document.getElementById('termClose').onclick = () => this.closeTerminal();
     document.getElementById('nextDayBtn').onclick = () => this.summary.nextDay();
-    document.querySelectorAll('.tab').forEach(t => {
-      t.onclick = () => { this.terminal.activeTab = t.dataset.tab; this.terminal.render(); };
+    document.querySelectorAll('.tab').forEach((t) => {
+      t.onclick = () => {
+        this.terminal.activeTab = t.dataset.tab;
+        this.terminal.render();
+      };
     });
   }
 
@@ -76,11 +98,17 @@ export default class UIManager {
     this.el.lockBar?.classList.remove('show');
   }
 
-  showPauseSettings() { this.show('pause'); this.pause.refresh(); }
+  showPauseSettings() {
+    this.show('pause');
+    this.pause.refresh();
+  }
 
   setPrompt(text) {
     const p = this.el.prompt;
-    if (!text) { p.style.opacity = 0; return; }
+    if (!text) {
+      p.style.opacity = 0;
+      return;
+    }
     if (p.textContent !== text) p.textContent = text;
     p.style.opacity = 1;
   }
@@ -100,7 +128,10 @@ export default class UIManager {
 
   updateCarry(text) {
     const c = this.el.carry;
-    if (!text) { c.style.opacity = 0; return; }
+    if (!text) {
+      c.style.opacity = 0;
+      return;
+    }
     c.textContent = text;
     c.style.opacity = 1;
   }
