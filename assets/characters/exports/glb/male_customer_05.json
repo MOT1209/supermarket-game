@@ -38,39 +38,15 @@
     "stoop": 1.5,
     "tempo": 0.96,
     "cart_arms": {
-      "UpperArm_L": [
-        -5.36,
-        8.23,
-        0.0
-      ],
-      "UpperArm_R": [
-        -5.36,
-        -8.23,
-        0.0
-      ],
-      "LowerArm_L": [
-        -84.27,
-        12.0,
-        0.0
-      ],
-      "LowerArm_R": [
-        -84.27,
-        -12.0,
-        0.0
-      ],
-      "Hand_L": [
-        0.0,
-        0.0,
-        0.0
-      ],
-      "Hand_R": [
-        0.0,
-        0.0,
-        0.0
-      ]
+      "UpperArm_L": [-5.36, 8.23, 0.0],
+      "UpperArm_R": [-5.36, -8.23, 0.0],
+      "LowerArm_L": [-84.27, 12.0, 0.0],
+      "LowerArm_R": [-84.27, -12.0, 0.0],
+      "Hand_L": [0.0, 0.0, 0.0],
+      "Hand_R": [0.0, 0.0, 0.0]
     }
   },
-  "grip_gap": 9.837370698364375e-05,
+  "grip_gap": 9.837370698364375e-5,
   "files": {
     "blend": "assets/characters/blender_source/male_customer_05.blend",
     "glb": "assets/characters/exports/glb/male_customer_05.glb",

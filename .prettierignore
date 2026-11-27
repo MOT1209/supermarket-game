@@ -5,3 +5,6 @@ coverage
 playwright-report
 test-results
 package-lock.json
+
+# Generated GLB metadata
+assets/characters/exports/glb/*.json

@@ -87,7 +87,8 @@ export default class Player {
         this.bodyMixer = new THREE.AnimationMixer(model);
         this.bodyActions = {};
         for (const clip of model.userData.animations || []) {
-          if (BODY_CLIPS.has(clip.name)) this.bodyActions[clip.name] = this.bodyMixer.clipAction(clip);
+          if (BODY_CLIPS.has(clip.name))
+            this.bodyActions[clip.name] = this.bodyMixer.clipAction(clip);
         }
         this.bodyAnim = null;
         this.playBody('Idle');
@@ -168,12 +169,8 @@ export default class Player {
     if (!shoulder) {
       // Chase camera: stop before the first full-height wall instead of
       // letting the view pass through it.
-      const allowed = safeCameraDistance(
-        this.pos.x,
-        this.pos.z,
-        offsetX,
-        offsetZ,
-        (x, z) => this.cameraBlocked(x, z)
+      const allowed = safeCameraDistance(this.pos.x, this.pos.z, offsetX, offsetZ, (x, z) =>
+        this.cameraBlocked(x, z)
       );
       const length = Math.hypot(offsetX, offsetZ);
       const scale = length > 0 ? allowed / length : 1;
@@ -208,11 +205,7 @@ export default class Player {
       return;
     }
     const forward = new THREE.Vector3(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
-    carried.group.position.set(
-      this.pos.x + forward.x * 0.55,
-      1.05,
-      this.pos.z + forward.z * 0.55
-    );
+    carried.group.position.set(this.pos.x + forward.x * 0.55, 1.05, this.pos.z + forward.z * 0.55);
     carried.group.rotation.set(0, this.yaw, 0);
   }
 

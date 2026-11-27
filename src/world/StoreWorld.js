@@ -531,10 +531,7 @@ export default class StoreWorld {
   cameraCollides(x, z, radius = 0.16) {
     return this.wallColliders.some(
       (c) =>
-        x + radius > c.minX &&
-        x - radius < c.maxX &&
-        z + radius > c.minZ &&
-        z - radius < c.maxZ
+        x + radius > c.minX && x - radius < c.maxX && z + radius > c.minZ && z - radius < c.maxZ
     );
   }
 

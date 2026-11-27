@@ -8,7 +8,10 @@ test('third-person camera stops before a wall', () => {
 });
 
 test('third-person camera keeps its distance in the open', () => {
-  assert.equal(safeCameraDistance(0, 0, 0, -3.2, () => false), 3.2);
+  assert.equal(
+    safeCameraDistance(0, 0, 0, -3.2, () => false),
+    3.2
+  );
 });
 
 test('third-person camera collapses against a close wall', () => {

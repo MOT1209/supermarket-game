@@ -15,10 +15,7 @@ function geo(key, make) {
 function mat(color, { roughness = 0.65, metalness = 0.05 } = {}) {
   const key = `${color}-${roughness}-${metalness}`;
   if (!materials.has(key)) {
-    materials.set(
-      key,
-      new THREE.MeshStandardMaterial({ color, roughness, metalness })
-    );
+    materials.set(key, new THREE.MeshStandardMaterial({ color, roughness, metalness }));
   }
   return materials.get(key);
 }
@@ -97,7 +94,12 @@ function cartParts() {
     const { bw, bd, bh, bz, by } = CART;
     const top = by + bh / 2;
     const metal = [
-      at(geo('cart:wire', () => wireBasket(bw, bh, bd)), 0, by, bz),
+      at(
+        geo('cart:wire', () => wireBasket(bw, bh, bd)),
+        0,
+        by,
+        bz
+      ),
       at(boxGeo(bw * 0.9, 0.02, bd * 0.85), 0, 0.19, bz),
       at(boxGeo(0.025, 0.24, 0.025), 0.2, 0.93, 0.32),
       at(boxGeo(0.025, 0.24, 0.025), -0.2, 0.93, 0.32)
@@ -112,7 +114,10 @@ function cartParts() {
     const rubber = [];
     for (const sx of [-1, 1]) {
       for (const sz of [0.46, 1.0]) {
-        const wheel = geo('cart:wheel', () => new THREE.CylinderGeometry(0.07, 0.07, 0.04, 12)).clone();
+        const wheel = geo(
+          'cart:wheel',
+          () => new THREE.CylinderGeometry(0.07, 0.07, 0.04, 12)
+        ).clone();
         wheel.rotateZ(Math.PI / 2);
         wheel.translate((sx * bw) / 2 - sx * 0.02, 0.07, sz);
         rubber.push(wheel);

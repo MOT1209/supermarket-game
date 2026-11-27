@@ -11,20 +11,20 @@ face, hair, silhouette, outfit, palette and accessories.
 
 ## Roster
 
-| ID | Character | Age group | Height | Carry | Spawn weight |
-| --- | --- | --- | ---: | --- | ---: |
-| `male_customer_01` | Young Boy (hoodie, backpack) | child | 1.31 m | — | 0.9 |
-| `male_customer_02` | Teenage Boy (bomber, headphones) | teen | 1.63 m | — | 1.2 |
-| `male_customer_03` | Young Man (henley, hand basket) | young adult | 1.77 m | basket | 1.6 |
-| `male_customer_04` | Young Man (smart casual, glasses) | young adult | 1.82 m | — | 1.5 |
-| `male_customer_05` | Adult Man (jacket, shopping cart) | adult | 1.75 m | cart | 1.5 |
-| `male_customer_06` | Elderly Man (cardigan, cap) | senior | 1.69 m | — | 1.1 |
-| `female_customer_01` | Young Girl (puffer, ponytail) | child | 1.29 m | — | 0.9 |
-| `female_customer_02` | Teenage Girl (sweater, beanie) | teen | 1.60 m | — | 1.2 |
-| `female_customer_03` | Young Woman (blouse, hand basket) | young adult | 1.68 m | basket | 1.6 |
-| `female_customer_04` | Young Woman (smart casual, tote) | young adult | 1.73 m | — | 1.5 |
-| `female_customer_05` | Adult Woman (coat, shopping cart) | adult | 1.64 m | cart | 1.5 |
-| `female_customer_06` | Elderly Woman (cardigan, scarf) | senior | 1.57 m | — | 1.1 |
+| ID                   | Character                         | Age group   | Height | Carry  | Spawn weight |
+| -------------------- | --------------------------------- | ----------- | -----: | ------ | -----------: |
+| `male_customer_01`   | Young Boy (hoodie, backpack)      | child       | 1.31 m | —      |          0.9 |
+| `male_customer_02`   | Teenage Boy (bomber, headphones)  | teen        | 1.63 m | —      |          1.2 |
+| `male_customer_03`   | Young Man (henley, hand basket)   | young adult | 1.77 m | basket |          1.6 |
+| `male_customer_04`   | Young Man (smart casual, glasses) | young adult | 1.82 m | —      |          1.5 |
+| `male_customer_05`   | Adult Man (jacket, shopping cart) | adult       | 1.75 m | cart   |          1.5 |
+| `male_customer_06`   | Elderly Man (cardigan, cap)       | senior      | 1.69 m | —      |          1.1 |
+| `female_customer_01` | Young Girl (puffer, ponytail)     | child       | 1.29 m | —      |          0.9 |
+| `female_customer_02` | Teenage Girl (sweater, beanie)    | teen        | 1.60 m | —      |          1.2 |
+| `female_customer_03` | Young Woman (blouse, hand basket) | young adult | 1.68 m | basket |          1.6 |
+| `female_customer_04` | Young Woman (smart casual, tote)  | young adult | 1.73 m | —      |          1.5 |
+| `female_customer_05` | Adult Woman (coat, shopping cart) | adult       | 1.64 m | cart   |          1.5 |
+| `female_customer_06` | Elderly Woman (cardigan, scarf)   | senior      | 1.57 m | —      |          1.1 |
 
 Weights add up to 15.6; young adults are the most common group, children and
 seniors the rarest. Gender stays at 50/50.

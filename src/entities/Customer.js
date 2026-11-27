@@ -117,9 +117,10 @@ function spawnSpot(game, pending) {
   for (let attempt = 0; attempt < 12; attempt += 1) {
     const x = rand(-3.4, 3.4);
     const z = 15.2 + rand(0, 1.8);
-    const clear = game.runtime.customers.every(
-      (c) => Math.hypot(c.group.position.x - x, c.group.position.z - z) > 1.05
-    ) && pending.every((p) => Math.hypot(p[0] - x, p[1] - z) > 1.05);
+    const clear =
+      game.runtime.customers.every(
+        (c) => Math.hypot(c.group.position.x - x, c.group.position.z - z) > 1.05
+      ) && pending.every((p) => Math.hypot(p[0] - x, p[1] - z) > 1.05);
     if (clear) return [x, z];
   }
   return null;
@@ -127,10 +128,7 @@ function spawnSpot(game, pending) {
 
 /** Prefer a character that is not already in the store or still loading. */
 function pickFreshCharacter(game, pending) {
-  const present = new Set([
-    ...game.runtime.customers.map((c) => c.character.id),
-    ...pending
-  ]);
+  const present = new Set([...game.runtime.customers.map((c) => c.character.id), ...pending]);
   for (let attempt = 0; attempt < 6; attempt += 1) {
     const character = pickCustomerCharacter();
     if (!present.has(character.id)) return character;

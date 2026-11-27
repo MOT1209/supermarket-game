@@ -11,20 +11,20 @@ Exporter: glTF 2.0 binary, Actions mode, baked animation
 21–22 material slots and 18–21k triangles. Total geometry across the set is
 235,344 triangles.
 
-| ID | Age | Height | Tris | Bones | Clips | Carry |
-| --- | --- | ---: | ---: | ---: | ---: | --- |
-| `male_customer_01` | child | 1.31 m | 19,486 | 22 | 18 | — |
-| `male_customer_02` | teen | 1.63 m | 19,734 | 22 | 18 | — |
-| `male_customer_03` | young adult | 1.77 m | 18,370 | 22 | 18 | basket |
-| `male_customer_04` | young adult | 1.82 m | 21,164 | 22 | 18 | — |
-| `male_customer_05` | adult | 1.75 m | 18,970 | 22 | 18 | cart |
-| `male_customer_06` | senior | 1.69 m | 18,914 | 22 | 18 | — |
-| `female_customer_01` | child | 1.29 m | 19,046 | 22 | 18 | — |
-| `female_customer_02` | teen | 1.60 m | 19,722 | 22 | 18 | — |
-| `female_customer_03` | young adult | 1.68 m | 18,830 | 22 | 18 | basket |
-| `female_customer_04` | young adult | 1.73 m | 20,602 | 22 | 18 | — |
-| `female_customer_05` | adult | 1.64 m | 19,906 | 22 | 18 | cart |
-| `female_customer_06` | senior | 1.57 m | 20,600 | 22 | 18 | — |
+| ID                   | Age         | Height |   Tris | Bones | Clips | Carry  |
+| -------------------- | ----------- | -----: | -----: | ----: | ----: | ------ |
+| `male_customer_01`   | child       | 1.31 m | 19,486 |    22 |    18 | —      |
+| `male_customer_02`   | teen        | 1.63 m | 19,734 |    22 |    18 | —      |
+| `male_customer_03`   | young adult | 1.77 m | 18,370 |    22 |    18 | basket |
+| `male_customer_04`   | young adult | 1.82 m | 21,164 |    22 |    18 | —      |
+| `male_customer_05`   | adult       | 1.75 m | 18,970 |    22 |    18 | cart   |
+| `male_customer_06`   | senior      | 1.69 m | 18,914 |    22 |    18 | —      |
+| `female_customer_01` | child       | 1.29 m | 19,046 |    22 |    18 | —      |
+| `female_customer_02` | teen        | 1.60 m | 19,722 |    22 |    18 | —      |
+| `female_customer_03` | young adult | 1.68 m | 18,830 |    22 |    18 | basket |
+| `female_customer_04` | young adult | 1.73 m | 20,602 |    22 |    18 | —      |
+| `female_customer_05` | adult       | 1.64 m | 19,906 |    22 |    18 | cart   |
+| `female_customer_06` | senior      | 1.57 m | 20,600 |    22 |    18 | —      |
 
 Roster: 6 male / 6 female; 2 children, 2 teenagers, 4 young adults, 2 adults,
 2 seniors. Spawn weights are in `src/data/customers.js`.
