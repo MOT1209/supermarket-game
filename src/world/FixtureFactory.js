@@ -32,7 +32,10 @@ export function createFixtureMesh(fixture) {
     pot.position.y = 0.22;
     addShadow(pot);
     g.add(pot);
-    const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.38, 10, 8), new THREE.MeshStandardMaterial({ color: 0x3f8a4a, roughness: 0.85 }));
+    const leaf = new THREE.Mesh(
+      new THREE.SphereGeometry(0.38, 10, 8),
+      new THREE.MeshStandardMaterial({ color: 0x3f8a4a, roughness: 0.85 })
+    );
     leaf.position.set(0, 0.65, 0);
     addShadow(leaf);
     g.add(leaf);

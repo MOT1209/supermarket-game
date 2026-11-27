@@ -90,12 +90,26 @@ export class NavGrid {
 
     for (const r of obstacles) {
       if (!r) continue;
-      const c0 = Math.max(0, Math.floor((r.minX - radius - minX) / cell));
-      const c1 = Math.min(this.cols - 1, Math.ceil((r.maxX + radius - minX) / cell));
-      const r0 = Math.max(0, Math.floor((r.minZ - radius - minZ) / cell));
-      const r1 = Math.min(this.rows - 1, Math.ceil((r.maxZ + radius - minZ) / cell));
-      for (let z = r0; z <= r1; z++) {
-        for (let x = c0; x <= c1; x++) this.blocked[z * this.cols + x] = 1;
+      const x0 = r.minX - radius;
+      const x1 = r.maxX + radius;
+      const z0 = r.minZ - radius;
+      const z1 = r.maxZ + radius;
+      const c0 = Math.max(0, Math.floor((x0 - minX) / cell));
+      const c1 = Math.min(this.cols - 1, Math.ceil((x1 - minX) / cell));
+      const r0 = Math.max(0, Math.floor((z0 - minZ) / cell));
+      const r1 = Math.min(this.rows - 1, Math.ceil((z1 - minZ) / cell));
+      // Block a cell only when the cell square actually overlaps the inflated
+      // rectangle. Rounding to whole cells instead added a full cell of dead
+      // ground around every prop, which sealed the kerb entrances of the
+      // crossings and made city routes impossible.
+      for (let cz = r0; cz <= r1; cz++) {
+        const cellZ = minZ + cz * cell;
+        if (cellZ >= z1 || cellZ + cell <= z0) continue;
+        for (let cx = c0; cx <= c1; cx++) {
+          const cellX = minX + cx * cell;
+          if (cellX >= x1 || cellX + cell <= x0) continue;
+          this.blocked[cz * this.cols + cx] = 1;
+        }
       }
     }
   }

@@ -4,8 +4,23 @@ import { pick, rand, rounded } from '../utils/math.js';
 import { emojiTexture } from '../utils/textures.js';
 import { currentSellPrice } from '../systems/Pricing.js';
 import { onHappyCustomer, onAngryCustomer } from '../systems/Reputation.js';
-import { makeCustomerModel, animateCustomer } from './CustomerModel.js';
+import { cloneModel, loadModel } from '../utils/AssetLoader.js';
 import { refreshShelfVisual } from '../world/ShelfFactory.js';
+
+const CHAR_FILES = [
+  'customers/customer_male_boy.glb',
+  'customers/customer_male_teen.glb',
+  'customers/customer_male_young.glb',
+  'customers/customer_male_adult.glb',
+  'customers/customer_male_middle_aged.glb',
+  'customers/customer_male_senior.glb',
+  'customers/customer_female_girl.glb',
+  'customers/customer_female_teen.glb',
+  'customers/customer_female_young.glb',
+  'customers/customer_female_adult.glb',
+  'customers/customer_female_middle_aged.glb',
+  'customers/customer_female_senior.glb'
+];
 
 function makeEmoji() {
   const s = new THREE.Sprite(
@@ -42,57 +57,73 @@ export function showEmoji(c, emoji, sec = 2.2) {
   c.emojiTimer = sec;
 }
 
-export function spawnCustomer(game) {
-  if (game.runtime.customers.length >= MAX_CUSTOMERS) return;
-  const model = makeCustomerModel();
-  const g = model.root;
-  const emoji = makeEmoji();
-  g.add(emoji);
-  g.position.set(rand(-1, 1), 0, 16);
-  g.scale.setScalar(rand(0.92, 1.08));
-  game.scene.add(g);
-  game.runtime.customers.push({
-    group: g,
-    rig: model.rig,
-    armL: model.armL,
-    armR: model.armR,
-    legL: model.legL,
-    legR: model.legR,
-    emoji,
-    state: 'enter',
-    timer: 0,
-    basket: [],
-    queueIndex: -1,
-    emojiTimer: 0,
-    visits: 0,
-    moving: false,
-    walkPhase: rand(0, 6),
-    // Shoppers have a favourite aisle; buying from it makes them happier.
-    pref: pick(CATEGORIES),
-    // Seconds they will wait in the checkout queue before leaving angry.
-    patience: rand(22, 40),
-    prefFound: false,
-    // A fixed target outside the entrance, chosen once. Re-rolling this every
-    // frame made leaving shoppers jitter and never actually despawn.
-    exitTarget: { x: rand(-1.6, 1.6), z: 16.5 }
-  });
+function setupAnimations(c, model, anims) {
+  const clips = anims || model.userData?.animations || [];
+  c.mixer = new THREE.AnimationMixer(model);
+  c.actions = {};
+  for (const clip of clips) {
+    try {
+      const action = c.mixer.clipAction(clip);
+      c.actions[clip.name] = action;
+    } catch (e) {
+      console.warn('[Customer] clipAction failed', clip.name, e);
+    }
+  }
+  c.currentAnim = null;
+  // default idle
+  playAnim(c, 'Idle');
 }
 
-function moveToward(c, tx, tz, speed, dt) {
-  const g = c.group;
-  const dx = tx - g.position.x,
-    dz = tz - g.position.z;
-  const d = Math.hypot(dx, dz);
-  if (d < 0.15) {
-    c.moving = false;
-    return true;
-  }
-  const step = Math.min(d, speed * dt);
-  g.position.x += (dx / d) * step;
-  g.position.z += (dz / d) * step;
-  g.rotation.y = Math.atan2(dx, dz);
-  c.moving = true;
-  return false;
+export function playAnim(c, name, fade = 0.25) {
+  if (!c.actions) return;
+  const next = c.actions[name];
+  if (!next || c.currentAnim === name) return;
+  const prev = c.currentAnim ? c.actions[c.currentAnim] : null;
+  next.reset();
+  next.setEffectiveTimeScale(1);
+  next.setEffectiveWeight(1);
+  next.fadeIn(fade);
+  next.play();
+  if (prev) prev.fadeOut(fade);
+  c.currentAnim = name;
+}
+
+export function spawnCustomer(game) {
+  if (game.runtime.customers.length >= MAX_CUSTOMERS) return;
+  const file = pick(CHAR_FILES);
+  Promise.all([cloneModel(file), loadModel(file)])
+    .then(([model, original]) => {
+      if (!model) return;
+      const g = model;
+      const emoji = makeEmoji();
+      g.add(emoji);
+      g.position.set(rand(-1, 1), 0, 16);
+      g.scale.setScalar(rand(0.95, 1.05));
+      game.scene.add(g);
+      const c = {
+        group: g,
+        mixer: null,
+        actions: null,
+        currentAnim: null,
+        emoji,
+        state: 'enter',
+        timer: 0,
+        basket: [],
+        queueIndex: -1,
+        emojiTimer: 0,
+        visits: 0,
+        moving: false,
+        walkPhase: rand(0, 6),
+        pref: pick(CATEGORIES),
+        patience: rand(22, 40),
+        prefFound: false,
+        exitTarget: { x: rand(-1.6, 1.6), z: 16.5 }
+      };
+      const anims = (original && original.userData && original.userData.animations) || [];
+      setupAnimations(c, model, anims);
+      game.runtime.customers.push(c);
+    })
+    .catch((err) => console.warn('[Customer] spawn failed', err));
 }
 
 export const basketTotal = (game, c) =>
@@ -101,6 +132,7 @@ export const basketTotal = (game, c) =>
 export function clearCustomers(game) {
   for (const c of game.runtime.customers) {
     game.scene.remove(c.group);
+    if (c.mixer) c.mixer.stopAllAction();
     disposeGroup(c.group);
   }
   game.runtime.customers = [];
@@ -134,10 +166,26 @@ export function doAutoCheckout(game, c) {
   game.save();
 }
 
+function updateAnim(c, dt) {
+  if (c.mixer) c.mixer.update(dt);
+  // decide animation from state
+  if (c.state === 'happy' || c.state === 'angry') {
+    playAnim(c, 'React');
+  } else if (c.moving) {
+    playAnim(c, 'Walk');
+  } else if (c.state === 'toShelf') {
+    playAnim(c, 'PickItem');
+  } else if (c.state === 'browse') {
+    playAnim(c, 'Shopping');
+  } else if (c.state === 'queue' || c.state === 'wait') {
+    playAnim(c, 'Wait');
+  } else {
+    playAnim(c, 'Idle');
+  }
+}
+
 export function updateCustomers(game, dt) {
   const { runtime, state } = game;
-  // Keep queue ordering consistent with array (arrival) order before any
-  // customer reads its queueIndex this frame.
   reindexQueue(game);
   for (let i = runtime.customers.length - 1; i >= 0; i--) {
     const c = runtime.customers[i];
@@ -167,7 +215,6 @@ export function updateCustomers(game, dt) {
           c.timer = 0;
           if (basketTotal(game, c) > 15) showEmoji(c, '😠', 3);
         } else {
-          // Prefer the customer's favourite aisle when it is in stock.
           const prefAvail = available.filter((s) => PRODUCTS[s.productId].category === c.pref);
           const sh = pick(prefAvail.length ? prefAvail : available);
           const [sx, sz] = game.spot(sh.spot);
@@ -199,7 +246,6 @@ export function updateCustomers(game, dt) {
         c.timer = 0;
       }
     } else if (c.state === 'wait') {
-      // Run out of patience while queueing -> leave unhappy.
       c.patience -= dt;
       if (c.patience <= 0) {
         showEmoji(c, '😡', 2.5);
@@ -218,11 +264,29 @@ export function updateCustomers(game, dt) {
       const exit = c.exitTarget || { x: 0, z: 16.5 };
       if (moveToward(c, exit.x, exit.z, 2.6, dt)) {
         game.scene.remove(c.group);
+        if (c.mixer) c.mixer.stopAllAction();
         disposeGroup(c.group);
         runtime.customers.splice(i, 1);
         reindexQueue(game);
       }
     }
-    animateCustomer(c, dt);
+    updateAnim(c, dt);
   }
+}
+
+function moveToward(c, tx, tz, speed, dt) {
+  const g = c.group;
+  const dx = tx - g.position.x,
+    dz = tz - g.position.z;
+  const d = Math.hypot(dx, dz);
+  if (d < 0.15) {
+    c.moving = false;
+    return true;
+  }
+  const step = Math.min(d, speed * dt);
+  g.position.x += (dx / d) * step;
+  g.position.z += (dz / d) * step;
+  g.rotation.y = Math.atan2(dx, dz);
+  c.moving = true;
+  return false;
 }

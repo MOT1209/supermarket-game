@@ -36,11 +36,15 @@ export default class Player {
   update(dt) {
     const axes = this.game.input.getMoveAxes();
     const sprint = this.game.input.isSprinting();
-    const speed = sprint ? 8.5 : 4.8;
+    const boost = this.game.runtime.boost;
+    const boostActive = boost && boost.until > performance.now();
+    if (boost && !boostActive) this.game.runtime.boost = null;
+    const speed = (sprint ? 8.5 : 4.8) * (boostActive ? boost.multiplier : 1);
     this.vel.set(axes.x, 0, axes.z);
 
     const { x: dx, z: dz } = movementToWorld(axes, this.yaw, speed, dt);
-    const collides = this.game.collides?.bind(this.game) || ((x,z)=>this.game.world.collides(x,z));
+    const collides =
+      this.game.collides?.bind(this.game) || ((x, z) => this.game.world.collides(x, z));
     if (!collides(this.pos.x + dx, this.pos.z)) this.pos.x += dx;
     if (!collides(this.pos.x, this.pos.z + dz)) this.pos.z += dz;
     this.pos.x = clamp(this.pos.x, CITY_BOUNDS.minX, CITY_BOUNDS.maxX);

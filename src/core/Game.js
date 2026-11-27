@@ -35,6 +35,7 @@ import { checkAchievements } from '../systems/Achievements.js';
 import { WebGLGuard, WEBGL_LOST } from './WebGLGuard.js';
 import BuildSystem from '../systems/BuildSystem.js';
 import BusinessSystem from '../systems/BusinessSystem.js';
+import ShopActivities from '../systems/ShopActivities.js';
 import { createFixtureMesh } from '../world/FixtureFactory.js';
 
 export default class Game {
@@ -71,7 +72,8 @@ export default class Game {
       boxes: [],
       customers: [],
       carried: null,
-      checkoutCustomer: null
+      checkoutCustomer: null,
+      boost: null
     };
 
     this.audio = new AudioManager();
@@ -86,6 +88,7 @@ export default class Game {
     this.checkout = new CheckoutSystem(this);
     this.buildSystem = new BuildSystem(this);
     this.businessSystem = new BusinessSystem(this);
+    this.shopActivities = new ShopActivities(this);
     this.applyGraphics();
 
     // Frequent gameplay saves are coalesced into one localStorage write.
@@ -289,7 +292,9 @@ export default class Game {
   }
 
   onEscape() {
-    if (this.ui.el.terminalOverlay.classList.contains('show')) {
+    if (this.ui.shopUI?.isOpen?.()) {
+      this.ui.shopUI.hide();
+    } else if (this.ui.el.terminalOverlay.classList.contains('show')) {
       this.ui.closeTerminal();
     } else if (this.mode === 'playing') {
       this.pauseGame();
