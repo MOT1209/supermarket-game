@@ -24,6 +24,21 @@ export default class PauseUI {
       this.game.applyGraphics();
       this.game.save();
     };
+
+    const who = document.getElementById('playerSelect');
+    who.onchange = (e) => {
+      const model = e.target.value === 'female' ? 'female' : 'male';
+      this.game.state.playerModel = model;
+      this.game.player.setPlayerModel(model);
+      this.game.save();
+    };
+
+    const view = document.getElementById('viewSelect');
+    view.onchange = (e) => {
+      this.game.state.viewMode = e.target.value;
+      this.game.player.setView(e.target.value);
+      this.game.save();
+    };
   }
 
   refresh() {
@@ -34,5 +49,7 @@ export default class PauseUI {
     document.getElementById('volSlider').value = vol;
     document.getElementById('volVal').textContent = vol + '%';
     document.getElementById('gfxSelect').value = s.graphics || 'high';
+    document.getElementById('playerSelect').value = s.playerModel || 'male';
+    document.getElementById('viewSelect').value = s.viewMode || 'first';
   }
 }

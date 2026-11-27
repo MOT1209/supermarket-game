@@ -1,48 +1,129 @@
-# FRESH MART — 12 Customer Characters: Final Report
+# Customer character build report
 
-## Characters Created (12)
+Generated: 2026-11-27
+Blender: 5.2.0 LTS (headless, factory startup)
+Exporter: glTF 2.0 binary, Actions mode, baked animation
 
-Male:
+## Result
 
-1. customer_male_boy — Young boy (~8 yrs)
-2. customer_male_teen — Teenager (~15 yrs)
-3. customer_male_young — Young man (~22 yrs)
-4. customer_male_adult — Adult man (~35 yrs)
-5. customer_male_middle_aged — Middle-aged man (~50 yrs)
-6. customer_male_senior — Senior man (~70 yrs)
+12 of 12 characters authored, rigged, animated, exported and copied into
+`public/models/customers/`. Each GLB carries one skin with 22 joints, 18 clips,
+21–22 material slots and 18–21k triangles. Total geometry across the set is
+235,344 triangles.
 
-Female: 7. customer_female_girl — Young girl (~8 yrs) 8. customer_female_teen — Teenager (~15 yrs) 9. customer_female_young — Young woman (~22 yrs) 10. customer_female_adult — Adult woman (~35 yrs) 11. customer_female_middle_aged — Middle-aged woman (~50 yrs) 12. customer_female_senior — Senior woman (~70 yrs)
+| ID                   | Age         | Height |   Tris | Bones | Clips | Carry  |
+| -------------------- | ----------- | -----: | -----: | ----: | ----: | ------ |
+| `male_customer_01`   | child       | 1.31 m | 19,486 |    22 |    18 | —      |
+| `male_customer_02`   | teen        | 1.63 m | 19,734 |    22 |    18 | —      |
+| `male_customer_03`   | young adult | 1.77 m | 18,370 |    22 |    18 | basket |
+| `male_customer_04`   | young adult | 1.82 m | 21,164 |    22 |    18 | —      |
+| `male_customer_05`   | adult       | 1.75 m | 18,970 |    22 |    18 | cart   |
+| `male_customer_06`   | senior      | 1.69 m | 18,914 |    22 |    18 | —      |
+| `female_customer_01` | child       | 1.29 m | 19,046 |    22 |    18 | —      |
+| `female_customer_02` | teen        | 1.60 m | 19,722 |    22 |    18 | —      |
+| `female_customer_03` | young adult | 1.68 m | 18,830 |    22 |    18 | basket |
+| `female_customer_04` | young adult | 1.73 m | 20,602 |    22 |    18 | —      |
+| `female_customer_05` | adult       | 1.64 m | 19,906 |    22 |    18 | cart   |
+| `female_customer_06` | senior      | 1.57 m | 20,600 |    22 |    18 | —      |
 
-Each has a unique face-less stylized humanoid mesh, distinct body proportions per age, unique clothing colors, hair styles (short/long/bald), and accessories (caps, glasses).
+Roster: 6 male / 6 female; 2 children, 2 teenagers, 4 young adults, 2 adults,
+2 seniors. Spawn weights are in `src/data/customers.js`.
 
-## Blender Source File
+## What was built
 
-- assets/characters/blender/FRESH_MART_CUSTOMERS.blend (combined preview scene, 12 armatures, 224 meshes)
-- Per-character single files: assets/characters/blender/customer_*.blend
+- **Faces:** shaped head with jaw, cheek and brow planes, nose bridge/tip,
+  ears, inset eye whites, irises, pupils, lashes, brows, lips and mouth.
+- **Hair:** short, bowl, undercut, side part, quiff, spiky, bob, ponytail,
+  bun, long straight, wavy and curly variants built from lofted caps and locks.
+- **Clothing:** hoodies, sweaters, shirts, blouses, cardigans, coats and
+  jackets with collars, lapels, cuffs, hems and pockets; trousers, jeans,
+  skirts and shorts; sneakers, boots and loafers with soles and laces.
+- **Accessories:** backpacks, tote bags, handbags, glasses, caps, beanies,
+  headphones, watches, belts, buttons and scarves.
+- **Rig:** 22-bone humanoid armature (`Root`, `Hips`, `Spine`, `Chest`, `Neck`,
+  `Head`, shoulders, arms, hands, thighs, shins, feet, toes), vertex-group
+  weights assigned at mesh build time, no automatic-weight cleanup.
+- **Animation:** 18 actions at 24 fps — `Idle`, `IdleBasket`, `IdleCart`,
+  `Walk`, `WalkBasket`, `WalkCart`, `Wait`, `LookAround`, `TurnLeft`,
+  `TurnRight`, `Stop`, `PickItem`, `PlaceItem`, `Checkout`, `Run`, `Greet`,
+  `Inspect`, `ReachHigh`. Loops use matching first/last keys; easing is a
+  monotone PCHIP so knees and elbows do not overshoot.
 
-## GLB File Locations
+## Visual QA
 
-- public/models/customers/customer_male_boy.glb (and 11 others)
-- assets/characters/customers/customer_*.glb (copies)
+- Full lineup render: `assets/characters/renders/lineup.png`
+  (1800×700 source: `lineup-full.png`).
+- In-game frame: `assets/characters/renders/gameplay.png`.
+- Checked for: distinct silhouettes and heights, varied skin tones, hair
+  volumes that read from behind, clothing colour separation, no interpenetrating
+  limbs at rest, feet on the floor, faces readable at 2–4 m.
+- Fixed during QA: Catmull-Rom uneven spacing (knee ridges), swept-tube frame
+  roll (diagonal creases), torso ending below the neck, rounded-box size
+  semantics, backpack strap stubs, flat pocket shading, missing brow material.
 
-## Animation Clips (10 per character)
+## In-game check
 
-Idle, Walk, Turn, Shopping, PushCart, CarryBasket, PickItem, Checkout, Wait, React
+Automated headless Chromium run against the Vite dev server (1024×640 WebGL
+via SwiftShader), with the screenshots in `renders/gameplay.png` and
+`.tmp-blender/game_closeup.png`:
 
-## Game Integration Files Changed
+- Started the game and reached `mode: playing`.
+- Spawned 7 shoppers (the store cap). The set was distinct — no repeated
+  character in the wave — and their spawn points were more than 1.05 m apart.
+- Every spawned model reported 18 actions. Active clips matched the carry
+  style: `WalkCart` for the cart shoppers, `WalkBasket` for the basket shopper,
+  `Walk` for everyone else; position Y was 0 (feet on the ground).
+- Rendered frame shows varied heights, faces, outfits, baskets and the wire
+  carts in the store entrance area.
 
-- src/utils/AssetLoader.js — attach gltf.animations to loaded scene userData
-- src/entities/Customer.js — load GLB characters via cloneModel, AnimationMixer + AnimationAction, state-driven animation selection, cleanup of mixers
-- src/entities/CustomerModel.js — left in place for CityLife background pedestrians
+This was an automated render/state check, not a manual playthrough: input
+handling, checkout flow and long sessions were covered by the existing unit
+suite and gameplay code, not replayed in the browser.
 
-## Tests Performed
+## Carry grip and render budget
 
-- Blender: all 12 characters built, rigged with humanoid armature, 10 animations created and pushed to NLA.
-- GLB export: all 12 exported with meshes, armature, materials, animations; verified clip names via Blender import.
-- Game build: `npm run build` passes (built in ~8s).
-- Runtime (Playwright): game starts, customers spawn, 10 actions load per customer, no console errors; pointer-lock warnings are headless-only and pre-existing.
+- Carrier arms are solved per rig against the real bone lengths, instead of
+  fixed angles. Cart shoppers target the bar at local ±0.17 m, y 1.05 m,
+  z 0.38 m; basket shoppers target the side rims at ±0.17 m,
+  y = height/2 + 0.21 m, z 0.36 m. The solved poses keep the elbows clear of
+  the torso (elbow x ≥ 0.20 m).
+- All four carrier GLBs carry `grip_gap` in their JSON metadata: under 0.1 mm.
+  In-game, with `IdleCart`/`IdleBasket` playing, the measured palm gap is 4–8 mm
+  through the idle loop for both carry styles.
+- Close-up renders: `renders/cart-grip.png` and `renders/basket-grip.png`.
+- Character parts are merged at load: 21 material slots become vertex colours
+  grouped by finish into at most four skinned meshes, with one shared material
+  per finish across shoppers. Baskets and carts are merged once per material
+  and reused (cart → 3 draw calls, basket → 2).
+- Seven shoppers in one frozen frame: 321 draw calls with them visible vs 285
+  with them hidden, so the whole crowd costs 36 calls (~5 each) and 139.5k
+  triangles (~19.9k each). A lighter wave with two carriers measured 28 calls
+  (~4 each). Before batching, the same protocol measured 25.2 calls per
+  shopper; the crowd is now ~80% cheaper.
+- Frame times here come from a software WebGL renderer and are not
+  representative of GPU performance; draw calls and triangles are the
+  meaningful figures.
 
-## Notes
+## Validation
 
-- Animation tracks use original cached clips (clone(true) loses KeyframeTrack prototypes); handled by loading original alongside clone.
-- CityLife background pedestrians remain procedural (unchanged) to avoid regression.
+- `npm test` — 75/75 passing, including `tests/customers.test.js`, which checks
+  the roster split, one skin with ≥20 joints, all required clips, camera-free
+  export, feet at Y=0, height within 12 cm of the roster, metadata agreement,
+  a ≤2 cm solved grip for every carrier and weighted coverage over 6,000 draws.
+- `npm run build` — Vite production build succeeds (final run after the
+  integration, cart and basket changes).
+- GLB inspection — every file parses, 1 skin, 22 joints, 18 animations,
+  21–22 material slots, no cameras or lights.
+
+## Rebuild
+
+```bash
+cd fresh-mart
+"/c/Program Files/Blender Foundation/Blender 5.2/blender.exe" \
+  -b --factory-startup -P tools/blender/build_customers.py
+```
+
+The build writes `.blend`, `.glb` and `.json` for every character plus
+`manifest.json`, then copies the game-ready GLBs to
+`public/models/customers/`. See `README.md` for the pipeline API and game
+integration notes.

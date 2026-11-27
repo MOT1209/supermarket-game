@@ -1,0 +1,46 @@
+{
+  "id": "female_customer_04",
+  "name": "Young Woman (Smart Casual)",
+  "gender": "female",
+  "age_group": "young_adult",
+  "age": 28,
+  "height_m": 1.73,
+  "tris": 20602,
+  "verts": 10665,
+  "bones": 22,
+  "materials": 22,
+  "animations": [
+    "Checkout",
+    "Greet",
+    "Idle",
+    "IdleBasket",
+    "IdleCart",
+    "Inspect",
+    "LookAround",
+    "PickItem",
+    "PlaceItem",
+    "ReachHigh",
+    "Run",
+    "Stop",
+    "TurnLeft",
+    "TurnRight",
+    "Wait",
+    "Walk",
+    "WalkBasket",
+    "WalkCart"
+  ],
+  "carry": "none",
+  "spawn_weight": 1.4,
+  "walk": {
+    "stride": 0.95,
+    "arm": 0.9,
+    "bounce": 0.95,
+    "stoop": 0.0,
+    "tempo": 0.98
+  },
+  "files": {
+    "blend": "assets/characters/blender_source/female_customer_04.blend",
+    "glb": "assets/characters/exports/glb/female_customer_04.glb",
+    "game_glb": "public/models/customers/female_customer_04.glb"
+  }
+}

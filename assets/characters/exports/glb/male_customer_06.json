@@ -1,0 +1,46 @@
+{
+  "id": "male_customer_06",
+  "name": "Elderly Man",
+  "gender": "male",
+  "age_group": "senior",
+  "age": 71,
+  "height_m": 1.69,
+  "tris": 18914,
+  "verts": 9805,
+  "bones": 22,
+  "materials": 21,
+  "animations": [
+    "Checkout",
+    "Greet",
+    "Idle",
+    "IdleBasket",
+    "IdleCart",
+    "Inspect",
+    "LookAround",
+    "PickItem",
+    "PlaceItem",
+    "ReachHigh",
+    "Run",
+    "Stop",
+    "TurnLeft",
+    "TurnRight",
+    "Wait",
+    "Walk",
+    "WalkBasket",
+    "WalkCart"
+  ],
+  "carry": "none",
+  "spawn_weight": 1.0,
+  "walk": {
+    "stride": 0.8,
+    "arm": 0.72,
+    "bounce": 0.7,
+    "stoop": 7.0,
+    "tempo": 0.86
+  },
+  "files": {
+    "blend": "assets/characters/blender_source/male_customer_06.blend",
+    "glb": "assets/characters/exports/glb/male_customer_06.glb",
+    "game_glb": "public/models/customers/male_customer_06.glb"
+  }
+}

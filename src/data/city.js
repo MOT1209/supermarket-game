@@ -353,8 +353,9 @@ export const TRAFFIC_LIGHTS = Object.freeze([
 
 export const CITY_PROPS = Object.freeze([
   { file: 'city/kiosk.glb', x: -33, z: 32.6, rot: Math.PI, collider: 1.3 },
-  { file: 'city/bus_stop.glb', x: 8, z: 32.4, rot: Math.PI, collider: 2.0 },
-  { file: 'city/bus_stop.glb', x: -8, z: 17.6, rot: 0, collider: 2.0 }
+  // Shelters hug the kerb: parked mid-pavement they walled the walkway off.
+  { file: 'city/bus_stop.glb', x: 8, z: 31.8, rot: Math.PI, collider: 2.0 },
+  { file: 'city/bus_stop.glb', x: -8, z: 18.2, rot: 0, collider: 2.0 }
 ]);
 
 export function cityDistance(x, z, targetX, targetZ) {
@@ -381,19 +382,21 @@ function buildCrossings() {
   const out = [];
   for (const s of CROSS_STREETS) {
     // Bands across the cross street, level with each sidewalk of Main Street.
+    // Each band runs 0.4 m past the kerb so it overlaps the pavement: on a
+    // 0.5 m nav grid a flush edge leaves a dead row at every crossing mouth.
     out.push({
       id: `${s.id}-north`,
       axis: 'x',
-      minX: s.minX + 0.3,
-      maxX: s.maxX - 0.3,
+      minX: s.minX - 0.4,
+      maxX: s.maxX + 0.4,
       minZ: MAIN_STREET.minZ - 5.4,
       maxZ: MAIN_STREET.minZ - 0.6
     });
     out.push({
       id: `${s.id}-south`,
       axis: 'x',
-      minX: s.minX + 0.3,
-      maxX: s.maxX - 0.3,
+      minX: s.minX - 0.4,
+      maxX: s.maxX + 0.4,
       minZ: MAIN_STREET.maxZ + 0.6,
       maxZ: MAIN_STREET.maxZ + 5.4
     });
@@ -403,16 +406,16 @@ function buildCrossings() {
       axis: 'z',
       minX: s.minX - 3.8,
       maxX: s.minX - 0.4,
-      minZ: MAIN_STREET.minZ + 0.4,
-      maxZ: MAIN_STREET.maxZ - 0.4
+      minZ: MAIN_STREET.minZ - 0.4,
+      maxZ: MAIN_STREET.maxZ + 0.4
     });
     out.push({
       id: `${s.id}-east`,
       axis: 'z',
       minX: s.maxX + 0.4,
       maxX: s.maxX + 3.8,
-      minZ: MAIN_STREET.minZ + 0.4,
-      maxZ: MAIN_STREET.maxZ - 0.4
+      minZ: MAIN_STREET.minZ - 0.4,
+      maxZ: MAIN_STREET.maxZ + 0.4
     });
   }
   return out;

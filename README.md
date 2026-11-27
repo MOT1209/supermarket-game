@@ -81,7 +81,7 @@ Progress auto-saves to `localStorage` (save schema v4, older saves migrate autom
 
 ## 3D assets (Blender → GLB)
 
-`public/models/` contains 23 low-poly GLB models authored in Blender 5.2 and exported with glTF 2.0: the store shell, display stands, checkout counter, player, cashier, three shoppers, car, street kit, house and one model per product. `src/utils/AssetLoader.js` loads and caches them through `GLTFLoader`; `StoreWorld` swaps the store shell, decorates the scene and replaces the register visual, `Player` uses the player GLB as first-person arms, and `ShelfFactory` replaces shelf products once the GLBs are ready. If a model is missing, the original procedural mesh is kept, so the game still runs.
+`public/models/` contains the Blender 5.2 → glTF 2.0 asset set: the store shell, display stands, checkout counter, player, cashier, car, street kit, house, one model per product, and **twelve fully rigged supermarket customers** in `public/models/customers/` (6 male, 6 female, from children to seniors). Each customer has a 22-bone humanoid rig, 18 baked actions (idle, walk, basket/cart walk, turns, pick/place, checkout, look-around and more) and ~20k triangles. `src/utils/AssetLoader.js` caches them and clones rigs with `SkeletonUtils.clone`; `src/entities/Customer.js` picks characters by weight and drives their animation state, and `CustomerProps.js` adds the hand basket or shopping cart. The full character pipeline is documented in [`assets/characters/README.md`](assets/characters/README.md). If a model is missing, the original procedural mesh is kept, so the game still runs.
 
 ## Project structure
 
@@ -99,12 +99,14 @@ src/
   data/                   Products, licenses, layout constants, build catalog, businesses, tuning
   utils/                  Math, canvas textures, mesh helpers, GLB loader
 public/
-  models/                 23 Blender-exported GLB models (store, props, people, products)
+  models/                 Blender-exported GLBs (store, props, products, 12 rigged customers)
+assets/characters/        Blender sources, GLB exports, metadata, renders and pipeline docs
 tests/
   smoke.test.js           data/economy/objective + GLB export sanity checks (node:test)
   controls.test.js        yaw-relative movement, key normalization, sprint, lock errors
   save.test.js            save migration/validation + debounced write scheduling
   progression.test.js     analytics aggregation + one-time achievement unlocks
+  customers.test.js       roster, rig, animation and weighted-spawn checks
   checkout.test.js        bill choice, rounded change, card amount validation
   webgl.test.js           WebGL probe, unavailable/lost/restored states
 e2e/

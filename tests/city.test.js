@@ -48,11 +48,16 @@ test('every intersection has four crossings, one per arm', () => {
     assert.equal(own.length, 4, `intersection ${it.id} should have 4 crossings`);
     for (const c of own) {
       assert.ok(isWalkableGround((c.minX + c.maxX) / 2, (c.minZ + c.maxZ) / 2));
+      // Bands poke 0.4 m past the kerb so they overlap the pavement; on the
+      // 0.5 m nav grid a flush edge leaves a dead row at the crossing mouth.
+      const slack = 0.5;
       if (c.axis === 'x') {
         // Crosses the north-south street: it must line up with that street.
-        assert.ok(c.minX >= it.minX - 0.01 && c.maxX <= it.maxX + 0.01);
+        assert.ok(c.minX >= it.minX - slack && c.maxX <= it.maxX + slack);
+        assert.ok(c.minX < it.minX || c.maxX > it.maxX, 'band must overlap the pavement');
       } else {
-        assert.ok(c.minZ >= it.minZ - 0.01 && c.maxZ <= it.maxZ + 0.01);
+        assert.ok(c.minZ >= it.minZ - slack && c.maxZ <= it.maxZ + slack);
+        assert.ok(c.minZ < it.minZ || c.maxZ > it.maxZ, 'band must overlap the pavement');
       }
       assert.equal(crossingAt((c.minX + c.maxX) / 2, (c.minZ + c.maxZ) / 2)?.id, c.id);
     }

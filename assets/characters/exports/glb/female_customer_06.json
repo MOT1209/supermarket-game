@@ -1,0 +1,46 @@
+{
+  "id": "female_customer_06",
+  "name": "Elderly Woman",
+  "gender": "female",
+  "age_group": "senior",
+  "age": 72,
+  "height_m": 1.57,
+  "tris": 20600,
+  "verts": 10636,
+  "bones": 22,
+  "materials": 23,
+  "animations": [
+    "Checkout",
+    "Greet",
+    "Idle",
+    "IdleBasket",
+    "IdleCart",
+    "Inspect",
+    "LookAround",
+    "PickItem",
+    "PlaceItem",
+    "ReachHigh",
+    "Run",
+    "Stop",
+    "TurnLeft",
+    "TurnRight",
+    "Wait",
+    "Walk",
+    "WalkBasket",
+    "WalkCart"
+  ],
+  "carry": "none",
+  "spawn_weight": 1.0,
+  "walk": {
+    "stride": 0.74,
+    "arm": 0.68,
+    "bounce": 0.65,
+    "stoop": 8.0,
+    "tempo": 0.84
+  },
+  "files": {
+    "blend": "assets/characters/blender_source/female_customer_06.blend",
+    "glb": "assets/characters/exports/glb/female_customer_06.glb",
+    "game_glb": "public/models/customers/female_customer_06.glb"
+  }
+}

@@ -18,7 +18,7 @@ const MOVEMENT_KEYS = new Set([
   'arrowleft',
   'arrowright'
 ]);
-const ACTION_KEYS = new Set(['e', 'q', 'l', 'b', 'm', 'r', 'x']);
+const ACTION_KEYS = new Set(['e', 'q', 'l', 'b', 'm', 'r', 'x', 'f', 'g']);
 
 export default class Input {
   constructor(game) {
@@ -26,6 +26,8 @@ export default class Input {
     this.keys = Object.create(null);
     this.locked = document.pointerLockElement === game.renderer.domElement;
     this.lastUnlockAt = 0;
+    this.buildEscapeAt = 0;
+    this.pauseIfUnlocked = false;
     this.touch = new TouchControls(game, this);
     this.attach();
   }
@@ -60,6 +62,9 @@ export default class Input {
 
     // Escape must work even while an input is focused (terminal/checkout).
     if (k === 'escape') {
+      if (this.game.mode === 'playing' && this.game.buildSystem?.enabled) {
+        this.buildEscapeAt = performance.now();
+      }
       e.preventDefault();
       this.game.onEscape();
       return;
@@ -84,14 +89,16 @@ export default class Input {
 
     if (e.repeat || this.game.mode !== 'playing') return;
     if (!ACTION_KEYS.has(k)) return;
-    if (k === 'e') {
-      if (this.game.buildSystem?.enabled) this.game.buildSystem.confirmPlace();
-      else this.game.onInteract();
-    } else if (k === 'q') this.game.onDrop();
+    if (k === 'e') this.game.onPrimaryAction();
+    else if (k === 'q') this.game.onDrop();
     else if (k === 'l' && this.wantsPointerLock && !this.locked) this.requestLock();
     else if (k === 'b') this.game.buildSystem?.toggle();
     else if (k === 'r') {
       if (this.game.buildSystem?.enabled) this.game.buildSystem.rotate();
+    } else if (k === 'f') {
+      if (this.game.buildSystem?.enabled) this.game.buildSystem.removeAtLook();
+    } else if (k === 'g') {
+      if (this.game.buildSystem?.enabled) this.game.buildSystem.startMove();
     } else if (k === 'x') {
       if (this.game.buildSystem?.enabled) this.game.buildSystem.cancel();
     } else if (k === 'm') this.game.ui?.toggleCityUI?.();
@@ -137,6 +144,7 @@ export default class Input {
     this.locked = locked;
 
     if (locked) {
+      this.pauseIfUnlocked = false;
       this.game.ui.hideLockError();
       this.game.audio.init();
       return;
@@ -144,16 +152,69 @@ export default class Input {
 
     this.lastUnlockAt = performance.now();
     this.clearKeys();
+    if (this.game.mode !== 'playing' || !this.wantsPointerLock) return;
+
+    // Escape leaves build mode and releases the pointer lock in the same
+    // gesture. The key event may arrive just before or just after this one, so
+    // give it a beat before treating the unlock as a real focus loss.
+    if (performance.now() - this.buildEscapeAt < 500) {
+      this.restoreLockOrPause();
+      return;
+    }
+    if (this.game.buildSystem?.enabled) {
+      setTimeout(() => {
+        if (this.game.mode !== 'playing' || document.pointerLockElement) return;
+        const escaped = performance.now() - this.buildEscapeAt < 500;
+        if (!escaped) {
+          if (document.hidden || !document.hasFocus()) {
+            this.game.pauseGame();
+            return;
+          }
+          if (this.game.buildSystem?.moveTarget) this.game.buildSystem.cancel();
+          else this.game.buildSystem?.stop();
+        }
+        this.restoreLockOrPause();
+      }, 120);
+      return;
+    }
     // Losing the mouse while playing means the player left the game window or
     // pressed Esc. Pause explicitly so the game can never sit in a half-locked
     // "playing" state with stale input.
-    if (this.game.mode === 'playing' && this.wantsPointerLock) this.game.pauseGame();
+    this.game.pauseGame();
   }
 
   onLockError(error) {
     this.locked = false;
     console.warn('[Input] Pointer lock failed:', error);
     this.game.ui.showLockError(describeLockError(error));
+    // A desktop game cannot stay in play with a free cursor. If the lock was
+    // refused, pause and let the user retry from the Resume button.
+    if (this.game.mode === 'playing' && this.wantsPointerLock) {
+      this.pauseIfUnlocked = false;
+      this.game.pauseGame();
+    }
+  }
+
+  // Play must never continue with a free cursor. Try to take the mouse back;
+  // if the browser refuses (for example during its post-Esc cooldown), pause so
+  // the free cursor belongs to a deliberate menu state.
+  restoreLockOrPause() {
+    if (!this.wantsPointerLock || this.game.mode !== 'playing') return;
+    if (document.pointerLockElement === this.game.renderer.domElement) return;
+    if (this.pauseIfUnlocked) return;
+    this.pauseIfUnlocked = true;
+    if (!this.requestLock()) {
+      this.pauseIfUnlocked = false;
+      this.game.pauseGame();
+      return;
+    }
+    setTimeout(() => {
+      if (!this.pauseIfUnlocked) return;
+      this.pauseIfUnlocked = false;
+      if (this.game.mode === 'playing' && !document.pointerLockElement) {
+        this.game.pauseGame();
+      }
+    }, 600);
   }
 
   requestLock() {

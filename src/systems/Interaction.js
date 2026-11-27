@@ -9,17 +9,33 @@ import { BUSINESSES } from '../data/businesses.js';
 const raycaster = new THREE.Raycaster();
 const dir = new THREE.Vector3();
 
+// Invisible meshes still take part in raycasts in some three.js versions, so
+// check the whole parent chain instead of trusting the renderer.
+function isVisible(o) {
+  for (let p = o; p; p = p.parent) if (p.visible === false) return false;
+  return true;
+}
+
+function wallBlockers(game) {
+  const shopWalls = game.city?.shopWorld?.wallMeshes || [];
+  return [game.world?.structure, game.world?.shell, ...shopWalls].filter(Boolean);
+}
+
 export function findInteract(game) {
   dir.set(0, 0, -1).applyQuaternion(game.camera.quaternion);
   raycaster.set(game.camera.position, dir);
   raycaster.far = 3.5;
-  const hits = raycaster.intersectObjects(game.world.interactables, true);
-  for (const h of hits) {
-    let o = h.object;
-    while (o && !o.userData.interact) o = o.parent;
-    if (o) return o;
-  }
-  return null;
+  // Every hit belongs to an interactable subtree (shelves, boxes, counters).
+  const hit = raycaster.intersectObjects(game.world.interactables, true)[0];
+  if (!hit) return null;
+  let target = hit.object;
+  while (target && !target.userData.interact) target = target.parent;
+  if (!target) return null;
+  const walls = raycaster.intersectObjects(wallBlockers(game), true);
+  // A wall between the camera and the prop wins: no restocking a shelf or
+  // opening a terminal through the supermarket shell or a shop's outer wall.
+  if (walls.some((w) => w.distance < hit.distance - 0.05 && isVisible(w.object))) return null;
+  return target;
 }
 
 export function interact(game) {

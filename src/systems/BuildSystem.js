@@ -6,11 +6,13 @@ import {
   productAllowed,
   validatePlacement,
   shelfDataFromSpot,
+  shelfPosition,
   nextFreeSpot
 } from '../data/build.js';
 import { maxSpots } from '../data/products.js';
-import { createShelfMesh } from '../world/ShelfFactory.js';
+import { createShelfMesh, disposeShelfMesh } from '../world/ShelfFactory.js';
 import { createFixtureMesh } from '../world/FixtureFactory.js';
+import { disposeObject3D } from '../utils/dispose.js';
 import { rounded } from '../utils/math.js';
 
 export default class BuildSystem {
@@ -23,21 +25,30 @@ export default class BuildSystem {
     this.ghost = null;
     this.ghostValid = false;
     this.moveTarget = null; // { kind: 'fixture'|'shelf', id }
+    this.selectionBox = null;
+    this.selectionTarget = null;
+    this._forward = new THREE.Vector3();
   }
 
   start() {
     this.enabled = true;
     this.game.setMode('playing'); // keep playing movement
+    this.game.input?.touch?.setBuildMode?.(true);
     this.ensureGhost();
     this.updateGhost();
     this.game.ui?.buildUI?.show?.();
+    // Do this last: a failed lock pauses and hides the bar again.
+    this.game.input?.restoreLockOrPause?.();
   }
 
   stop() {
     this.enabled = false;
+    this.game.input?.touch?.setBuildMode?.(false);
     this.removeGhost();
     this.moveTarget = null;
+    this.removeSelection();
     this.game.ui?.buildUI?.hide?.();
+    this.game.input?.restoreLockOrPause?.();
   }
 
   toggle() {
@@ -48,6 +59,7 @@ export default class BuildSystem {
   setCatalog(type) {
     if (!catalogItem(type)) return;
     this.catalogType = type;
+    this.endMove();
     this.ensureGhost();
     this.updateGhost();
   }
@@ -62,18 +74,15 @@ export default class BuildSystem {
     this.updateGhost();
   }
 
+  removeGhost() {
+    if (!this.ghost) return;
+    this.game.scene.remove(this.ghost);
+    disposeObject3D(this.ghost);
+    this.ghost = null;
+  }
+
   ensureGhost() {
-    if (this.ghost) {
-      this.game.scene.remove(this.ghost);
-      this.ghost.traverse((o) => {
-        if (o.material) {
-          const mats = Array.isArray(o.material) ? o.material : [o.material];
-          mats.forEach((m) => m.dispose?.());
-        }
-        if (o.geometry) o.geometry.dispose?.();
-      });
-      this.ghost = null;
-    }
+    this.removeGhost();
     const item = catalogItem(this.catalogType);
     if (!item) return;
     const g = new THREE.Group();
@@ -91,7 +100,7 @@ export default class BuildSystem {
 
   getWorldPositionFromPlayer() {
     const p = this.game.player.pos;
-    const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(this.game.camera.quaternion);
+    const dir = this._forward.set(0, 0, -1).applyQuaternion(this.game.camera.quaternion);
     const dist = 2.2;
     return { x: p.x + dir.x * dist, z: p.z + dir.z * dist };
   }
@@ -112,28 +121,125 @@ export default class BuildSystem {
     this.ghost.visible = true;
   }
 
+  syncUI() {
+    this.game.ui?.buildUI?.syncSelection?.();
+  }
+
+  // A soft amber cage around the piece picked up for moving, so the player can
+  // tell it apart from the placement ghost.
+  ensureSelectionBox() {
+    if (this.selectionBox) return this.selectionBox;
+    const geo = new THREE.BoxGeometry(1, 1, 1);
+    const box = new THREE.Group();
+    box.add(
+      new THREE.Mesh(
+        geo,
+        new THREE.MeshBasicMaterial({
+          color: 0xffd76b,
+          transparent: true,
+          opacity: 0.14,
+          depthWrite: false
+        })
+      ),
+      new THREE.LineSegments(
+        new THREE.EdgesGeometry(geo),
+        new THREE.LineBasicMaterial({ color: 0xffe08a })
+      )
+    );
+    box.visible = false;
+    this.game.scene.add(box);
+    this.selectionBox = box;
+    return box;
+  }
+
+  markSelected(group) {
+    if (!group) {
+      this.clearSelected();
+      return;
+    }
+    const bounds = new THREE.Box3().setFromObject(group);
+    if (bounds.isEmpty()) {
+      this.clearSelected();
+      return;
+    }
+    const box = this.ensureSelectionBox();
+    const size = bounds.getSize(new THREE.Vector3());
+    box.position.copy(bounds.getCenter(new THREE.Vector3()));
+    box.scale.set(size.x + 0.16, size.y + 0.16, size.z + 0.16);
+    box.visible = true;
+    this.selectionTarget = group;
+  }
+
+  clearSelected() {
+    this.selectionTarget = null;
+    if (this.selectionBox) this.selectionBox.visible = false;
+  }
+
+  removeSelection() {
+    this.clearSelected();
+    if (!this.selectionBox) return;
+    this.game.scene.remove(this.selectionBox);
+    disposeObject3D(this.selectionBox);
+    this.selectionBox = null;
+  }
+
+  endMove() {
+    this.moveTarget = null;
+    this.clearSelected();
+    this.syncUI();
+  }
+
+  // Nearest placed shelf or fixture to the build cursor (2.2m ahead).
+  pickAtLook() {
+    const pos = this.getWorldPositionFromPlayer();
+    const near = (x, z) => Math.hypot(x - pos.x, z - pos.z) < 1.6;
+    const fixture = (this.game.runtime.fixtures || []).find((f) => near(f.x, f.z));
+    if (fixture) {
+      return { kind: 'fixture', id: fixture.id, item: catalogItem(fixture.type), data: fixture };
+    }
+    const shelf = (this.game.runtime.shelves || []).find((s) => {
+      const p = shelfPosition(s);
+      return near(p.x, p.z);
+    });
+    if (!shelf) return null;
+    const type = shelf.freezer ? 'freezer' : shelf.fridge ? 'fridge' : 'shelf';
+    return { kind: 'shelf', id: shelf.spot, item: catalogItem(type), data: shelf };
+  }
+
+  // Pick up the furniture in front of the player so Place moves it instead of
+  // buying a new one.
+  startMove() {
+    const target = this.pickAtLook();
+    if (!target || !target.item) {
+      this.game.ui.toast('Aim at a shelf or fixture to move it');
+      return;
+    }
+    this.moveTarget = { kind: target.kind, id: target.id };
+    this.catalogType = target.item.id;
+    this.rotation =
+      (target.kind === 'shelf' ? shelfPosition(target.data).rot : target.data.rot) || 0;
+    this.ensureGhost();
+    this.updateGhost();
+    this.markSelected(target.data.group);
+    this.syncUI();
+    this.game.ui.toast('Moving — aim and press Place (E)');
+  }
+
+  disposePlaced(group, shelf = false) {
+    if (!group) return;
+    if (this.selectionTarget === group) this.clearSelected();
+    this.game.scene.remove(group);
+    this.game.world.untagInteract?.(group);
+    if (shelf) disposeShelfMesh(group);
+    else disposeObject3D(group);
+  }
+
   validateAt(x, z, rot) {
     const item = catalogItem(this.catalogType);
     if (!item) return { ok: false, reason: 'Unknown item' };
     const game = this.game;
     const level = game.state.level || 1;
     const colliders = game.world.storeColliders || game.world.colliders || [];
-    const shelves = game.runtime.shelves.map((s) => ({
-      spot: s.spot,
-      x: s.x,
-      z: s.z,
-      rot: s.rot,
-      fridge: s.fridge,
-      freezer: s.freezer
-    }));
-    const fixtures = (game.runtime.fixtures || []).map((f) => ({
-      id: f.id,
-      type: f.type,
-      x: f.x,
-      z: f.z,
-      rot: f.rot
-    }));
-    const ignore = this.moveTarget ? this.moveTarget : null;
     return validatePlacement({
       type: this.catalogType,
       x,
@@ -141,9 +247,9 @@ export default class BuildSystem {
       rot,
       level,
       colliders,
-      shelves,
-      fixtures,
-      ignore
+      shelves: game.runtime.shelves,
+      fixtures: game.runtime.fixtures || [],
+      ignore: this.moveTarget
     });
   }
 
@@ -160,47 +266,41 @@ export default class BuildSystem {
     const cost = item.cost || 0;
 
     if (this.moveTarget) {
-      // moving existing
-      if (this.moveTarget.kind === 'fixture') {
-        const fx = (this.game.runtime.fixtures || []).find((f) => f.id === this.moveTarget.id);
+      // Moving existing furniture: update the runtime entry and its saved
+      // copy, then rebuild the visual and the colliders at the new spot.
+      const target = this.moveTarget;
+      let placed = false;
+      if (target.kind === 'fixture') {
+        const fx = (this.game.runtime.fixtures || []).find((f) => f.id === target.id);
         if (fx) {
           fx.x = res.x;
           fx.z = res.z;
           fx.rot = res.rot;
-          // rebuild visual
-          if (fx.group) {
-            this.game.scene.remove(fx.group);
-            fx.group.traverse((o) => {
-              if (o.geometry) o.geometry.dispose?.();
-              if (o.material) {
-                const mats = Array.isArray(o.material) ? o.material : [o.material];
-                mats.forEach((m) => m.dispose?.());
-              }
-            });
-          }
-          const mesh = createFixtureMesh(fx);
-          this.game.scene.add(mesh);
-          fx.group = mesh;
+          this.disposePlaced(fx.group);
+          fx.group = createFixtureMesh(fx);
+          this.game.scene.add(fx.group);
+          const saved = (this.game.state.fixtures || []).find((f) => f.id === fx.id);
+          if (saved) Object.assign(saved, { x: fx.x, z: fx.z, rot: fx.rot });
+          placed = true;
         }
-      } else if (this.moveTarget.kind === 'shelf') {
-        const sh = this.game.runtime.shelves.find((s) => s.spot === this.moveTarget.id);
+      } else {
+        const sh = this.game.runtime.shelves.find((s) => s.spot === target.id);
         if (sh) {
           sh.x = res.x;
           sh.z = res.z;
           sh.rot = res.rot;
-          if (sh.group) {
-            this.game.scene.remove(sh.group);
-          }
-          // recreate shelf mesh at new pos
-          const shd = { ...sh, x: sh.x, z: sh.z, rot: sh.rot };
-          const group = createShelfMesh(shd, this.game);
-          sh.group = group;
+          this.disposePlaced(sh.group, true);
+          sh.group = createShelfMesh(sh, this.game);
+          const saved = this.game.state.shelves.find((s) => s.spot === sh.spot);
+          if (saved) Object.assign(saved, { x: sh.x, z: sh.z, rot: sh.rot });
+          placed = true;
         }
       }
-      this.moveTarget = null;
+      this.endMove();
+      this.game.world.rebuildColliders?.();
       this.game.syncShelfData?.();
       this.game.save(true, true);
-      this.game.ui.toast('Moved');
+      this.game.ui.toast(placed ? 'Moved' : 'That item is gone');
       this.updateGhost();
       return;
     }
@@ -272,35 +372,40 @@ export default class BuildSystem {
   }
 
   cancel() {
-    this.moveTarget = null;
+    this.endMove();
     this.game.ui.toast('Cancelled');
     this.updateGhost();
   }
 
+  // Sell back the shelf or fixture in front of the player for half its price.
   removeAtLook() {
-    // simple: try to find nearest fixture/shelf in front
-    const pos = this.getWorldPositionFromPlayer();
-    const fxList = this.game.runtime.fixtures || [];
-    for (const fx of fxList) {
-      const dx = fx.x - pos.x;
-      const dz = fx.z - pos.z;
-      if (Math.hypot(dx, dz) < 1.5) {
-        // remove
-        const item = catalogItem(fx.type);
-        const refund = Math.floor((item?.cost || 0) * 0.5);
-        this.game.state.cash += refund;
-        this.game.state.fixtures = (this.game.state.fixtures || []).filter((f) => f.id !== fx.id);
-        this.game.runtime.fixtures = fxList.filter((f) => f !== fx);
-        if (fx.group) {
-          this.game.scene.remove(fx.group);
-        }
-        this.game.world.rebuildColliders?.();
-        this.game.save(true, true);
-        this.game.ui.toast(`Removed (+$${refund})`);
-        return;
-      }
+    const target = this.pickAtLook();
+    if (!target || !target.item) {
+      this.game.ui.toast('Aim at a shelf or fixture to remove it');
+      return;
     }
-    this.game.ui.toast('Nothing to remove nearby');
+    const refund = Math.floor((target.item.cost || 0) * 0.5);
+    this.game.state.cash = rounded(this.game.state.cash + refund);
+    this.endMove();
+    if (target.kind === 'shelf') {
+      const sh = this.game.runtime.shelves.find((s) => s.spot === target.id);
+      this.game.state.shelves = this.game.state.shelves.filter((s) => s.spot !== target.id);
+      this.game.runtime.shelves = this.game.runtime.shelves.filter((s) => s.spot !== target.id);
+      this.disposePlaced(sh?.group, true);
+    } else {
+      const fx = (this.game.runtime.fixtures || []).find((f) => f.id === target.id);
+      this.game.state.fixtures = (this.game.state.fixtures || []).filter((f) => f.id !== target.id);
+      this.game.runtime.fixtures = (this.game.runtime.fixtures || []).filter(
+        (f) => f.id !== target.id
+      );
+      this.disposePlaced(fx?.group);
+    }
+    this.game.world.rebuildColliders?.();
+    this.game.syncShelfData?.();
+    this.game.ui.updateHUD?.();
+    this.game.save(true, true);
+    this.game.ui.toast(`Removed (+$${refund})`);
+    this.updateGhost();
   }
 
   update() {

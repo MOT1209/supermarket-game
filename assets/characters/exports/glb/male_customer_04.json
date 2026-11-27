@@ -1,0 +1,46 @@
+{
+  "id": "male_customer_04",
+  "name": "Young Man (Smart Casual)",
+  "gender": "male",
+  "age_group": "young_adult",
+  "age": 27,
+  "height_m": 1.82,
+  "tris": 21164,
+  "verts": 10910,
+  "bones": 22,
+  "materials": 23,
+  "animations": [
+    "Checkout",
+    "Greet",
+    "Idle",
+    "IdleBasket",
+    "IdleCart",
+    "Inspect",
+    "LookAround",
+    "PickItem",
+    "PlaceItem",
+    "ReachHigh",
+    "Run",
+    "Stop",
+    "TurnLeft",
+    "TurnRight",
+    "Wait",
+    "Walk",
+    "WalkBasket",
+    "WalkCart"
+  ],
+  "carry": "none",
+  "spawn_weight": 1.4,
+  "walk": {
+    "stride": 1.04,
+    "arm": 0.95,
+    "bounce": 0.95,
+    "stoop": 0.0,
+    "tempo": 0.98
+  },
+  "files": {
+    "blend": "assets/characters/blender_source/male_customer_04.blend",
+    "glb": "assets/characters/exports/glb/male_customer_04.glb",
+    "game_glb": "public/models/customers/male_customer_04.glb"
+  }
+}
