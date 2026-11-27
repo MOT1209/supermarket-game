@@ -28,6 +28,7 @@ export default class StoreWorld {
     this.colliders = [];
     this.structure = null;
     this.walls = [];
+    this.wallColliders = [];
     this.structureLevel = 0;
   }
 
@@ -454,24 +455,38 @@ export default class StoreWorld {
   }
 
   rebuildColliders() {
-    const c = [
+    const wallColliders = [
       // Front wall leaves the entrance open.
       { minX: -12.5, maxX: -2.5, minZ: 11.6, maxZ: 12.4 },
-      { minX: 2.5, maxX: 12.5, minZ: 11.6, maxZ: 12.4 },
+      { minX: 2.5, maxX: 12.5, minZ: 11.6, maxZ: 12.4 }
+    ];
+    for (const w of this.walls) {
+      for (const s of this.wallSegments(w)) {
+        if (w.axis === 'x') {
+          wallColliders.push({
+            minX: s.from,
+            maxX: s.to,
+            minZ: w.at - 0.25,
+            maxZ: w.at + 0.25
+          });
+        } else {
+          wallColliders.push({
+            minX: w.at - 0.25,
+            maxX: w.at + 0.25,
+            minZ: s.from,
+            maxZ: s.to
+          });
+        }
+      }
+    }
+    this.wallColliders = wallColliders;
+    const c = [
+      ...wallColliders,
       // Register, terminal and dumpster.
       { minX: 5.5, maxX: 8.5, minZ: 7.2, maxZ: 8.8 },
       { minX: -7.7, maxX: -6.3, minZ: 7.4, maxZ: 8.6 },
       { minX: -11.3, maxX: -8.7, minZ: 15.2, maxZ: 16.8 }
     ];
-    for (const w of this.walls) {
-      for (const s of this.wallSegments(w)) {
-        if (w.axis === 'x') {
-          c.push({ minX: s.from, maxX: s.to, minZ: w.at - 0.25, maxZ: w.at + 0.25 });
-        } else {
-          c.push({ minX: w.at - 0.25, maxX: w.at + 0.25, minZ: s.from, maxZ: s.to });
-        }
-      }
-    }
     // Add fixture colliders
     for (const fx of this.game.runtime.fixtures || []) {
       if (fx.type === 'sign' || fx.type === 'storage') continue;
@@ -508,6 +523,18 @@ export default class StoreWorld {
     const r = 0.38;
     return this.colliders.some(
       (c) => x + r > c.minX && x - r < c.maxX && z + r > c.minZ && z - r < c.maxZ
+    );
+  }
+
+  // Walls only: shelves and low props are below a chase camera, so they must
+  // not pull it in from above.
+  cameraCollides(x, z, radius = 0.16) {
+    return this.wallColliders.some(
+      (c) =>
+        x + radius > c.minX &&
+        x - radius < c.maxX &&
+        z + radius > c.minZ &&
+        z - radius < c.maxZ
     );
   }
 

@@ -2,9 +2,10 @@ import * as THREE from 'three';
 import { clamp } from '../utils/math.js';
 import { movementToWorld } from '../core/controls.js';
 import { cloneCharacter, cloneModel } from '../utils/AssetLoader.js';
+import { safeCameraDistance } from '../utils/camera.js';
 import { CITY_BOUNDS } from '../data/city.js';
 
-const VIEW_MODES = new Set(['first', 'second', 'third']);
+const VIEW_MODES = new Set(['first', 'shoulder', 'third']);
 const BODY_FILES = {
   male: 'customers/male_customer_04.glb',
   female: 'customers/female_customer_04.glb'
@@ -33,6 +34,9 @@ export default class Player {
     const model = game.state.playerModel === 'female' ? 'female' : 'male';
     this.attachViewModel(model);
     this.attachBody(model);
+    // The menu renders before update() runs, so put the camera in the saved
+    // view right away instead of starting inside the avatar's head.
+    this.updateCamera(1.7);
   }
 
   attachViewModel(kind = 'male') {
@@ -150,23 +154,43 @@ export default class Player {
 
     const forward = new THREE.Vector3(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
     const right = new THREE.Vector3(Math.cos(this.yaw), 0, -Math.sin(this.yaw));
-    const shoulder = this.view === 'second';
+    const shoulder = this.view === 'shoulder';
     const distance = shoulder ? 0.75 : 3.2;
     const side = shoulder ? 0.5 : 0;
     const height = shoulder ? 1.78 : 2.15;
     const lookAhead = shoulder ? 2.6 : 2;
     const pitchReach = shoulder ? 2.6 : 3.2;
 
-    camera.position.set(
-      this.pos.x + right.x * side - forward.x * distance,
-      height,
-      this.pos.z + right.z * side - forward.z * distance
-    );
+    const offsetX = right.x * side - forward.x * distance;
+    const offsetZ = right.z * side - forward.z * distance;
+    let camX = this.pos.x + offsetX;
+    let camZ = this.pos.z + offsetZ;
+    if (!shoulder) {
+      // Chase camera: stop before the first full-height wall instead of
+      // letting the view pass through it.
+      const allowed = safeCameraDistance(
+        this.pos.x,
+        this.pos.z,
+        offsetX,
+        offsetZ,
+        (x, z) => this.cameraBlocked(x, z)
+      );
+      const length = Math.hypot(offsetX, offsetZ);
+      const scale = length > 0 ? allowed / length : 1;
+      camX = this.pos.x + offsetX * scale;
+      camZ = this.pos.z + offsetZ * scale;
+    }
+    camera.position.set(camX, height, camZ);
     camera.lookAt(
       this.pos.x + forward.x * lookAhead + right.x * (shoulder ? 0.15 : 0),
       (shoulder ? 1.42 : 1.35) + Math.tan(this.pitch) * pitchReach,
       this.pos.z + forward.z * lookAhead + right.z * (shoulder ? 0.15 : 0)
     );
+  }
+
+  cameraBlocked(x, z) {
+    if (this.game.world?.cameraCollides?.(x, z)) return true;
+    return this.game.city?.collides?.(x, z, 0.16) || false;
   }
 
   updateCarried() {

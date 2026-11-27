@@ -59,5 +59,7 @@ const info = await page.evaluate(async ({ kind, view }) => {
 
 await page.waitForTimeout(250);
 await page.screenshot({ path: out });
-await browser.close();
 console.log(JSON.stringify({ out, ...info }));
+// A stuck SwiftShader browser can hold close() forever after the PNG is saved.
+await Promise.race([browser.close(), new Promise((r) => setTimeout(r, 3000))]);
+process.exit(0);

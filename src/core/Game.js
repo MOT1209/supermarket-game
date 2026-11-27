@@ -204,7 +204,7 @@ export default class Game {
     // Old saves may already satisfy milestones that had no system yet.
     this.pendingAchievements = checkAchievements(this.state);
     if (this.pendingAchievements.length) this.save(false, true);
-    this.camera.position.copy(this.player.pos);
+    this.player.updateCamera(1.7);
     requestAnimationFrame((t) => this.animate(t));
   }
 

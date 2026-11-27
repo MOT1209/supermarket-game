@@ -56,6 +56,8 @@ test('migrate keeps only the two player models and three camera views', () => {
   const kept = migrate(s);
   assert.equal(kept.playerModel, 'female');
   assert.equal(kept.viewMode, 'third');
+  s.viewMode = 'second';
+  assert.equal(migrate(s).viewMode, 'shoulder');
   s.playerModel = 'robot';
   s.viewMode = 'orbit';
   const fixed = migrate(s);

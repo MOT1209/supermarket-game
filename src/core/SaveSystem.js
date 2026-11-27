@@ -188,7 +188,8 @@ export function migrate(data) {
   m.volume = safeNumber(m.volume, 0.8, 0, 1);
   m.graphics = GRAPHICS_MODES.has(m.graphics) ? m.graphics : base.graphics;
   m.playerModel = m.playerModel === 'female' ? 'female' : 'male';
-  m.viewMode = ['first', 'second', 'third'].includes(m.viewMode) ? m.viewMode : 'first';
+  m.viewMode = m.viewMode === 'second' ? 'shoulder' : m.viewMode;
+  m.viewMode = ['first', 'shoulder', 'third'].includes(m.viewMode) ? m.viewMode : 'first';
   m.storeName =
     typeof m.storeName === 'string' && m.storeName.trim()
       ? m.storeName.trim().slice(0, 24)
