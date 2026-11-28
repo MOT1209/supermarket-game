@@ -57,9 +57,8 @@ mirrored in each character's JSON metadata.
 
 ## Visual QA
 
-- Full lineup render: `assets/characters/renders/lineup.png`
-  (1800×700 source: `lineup-full.png`), re-rendered 2026-11-28 from the
-  current GLBs.
+- Full lineup render: `assets/characters/renders/lineup.png` (1800×700),
+  re-rendered 2026-11-28 from the current GLBs.
 - In-game frame: `assets/characters/renders/gameplay.png`.
 - Checked for: distinct silhouettes and heights, varied skin tones, hair
   volumes that read from behind, clothing colour separation, no interpenetrating

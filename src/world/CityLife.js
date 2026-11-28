@@ -102,18 +102,22 @@ export default class CityLife {
           this.dressFallbackPed(ped);
           return;
         }
-        ped.model = model;
-        ped.group.add(model);
-        ped.mixer = new THREE.AnimationMixer(model);
-        ped.actions = {};
+        const mixer = new THREE.AnimationMixer(model);
+        const actions = {};
         for (const clip of model.userData.animations || []) {
           if (clip.name !== 'Walk' && clip.name !== 'Idle') continue;
-          const action = ped.mixer.clipAction(clip);
+          const action = mixer.clipAction(clip);
           action.setLoop(THREE.LoopRepeat, Infinity);
           action.setEffectiveWeight(0);
           action.play();
-          ped.actions[clip.name] = action;
+          actions[clip.name] = action;
         }
+        // Only attach once the mixer is ready, so a failure cannot leave the
+        // GLB and the procedural fallback in the same group.
+        ped.model = model;
+        ped.mixer = mixer;
+        ped.actions = actions;
+        ped.group.add(model);
         ped.ready = true;
         this.playPed(ped, ped.moving ? 'Walk' : 'Idle', 0);
       })
