@@ -70,11 +70,9 @@ export default class CityLife {
     const ped = {
       group,
       character: pick(CITY_PEDESTRIAN_CHARACTERS),
-      model: null,
       mixer: null,
       actions: null,
       anim: null,
-      ready: false,
       rig: null,
       speed: rand(0.9, 1.45),
       phase: rand(0, 6),
@@ -114,11 +112,9 @@ export default class CityLife {
         }
         // Only attach once the mixer is ready, so a failure cannot leave the
         // GLB and the procedural fallback in the same group.
-        ped.model = model;
         ped.mixer = mixer;
         ped.actions = actions;
         ped.group.add(model);
-        ped.ready = true;
         this.playPed(ped, ped.moving ? 'Walk' : 'Idle', 0);
       })
       .catch((err) => {
@@ -129,14 +125,12 @@ export default class CityLife {
 
   dressFallbackPed(ped) {
     const model = makeCustomerModel();
-    ped.model = model.root;
     ped.rig = model.rig;
     ped.armL = model.armL;
     ped.armR = model.armR;
     ped.legL = model.legL;
     ped.legR = model.legR;
     ped.group.add(model.root);
-    ped.ready = true;
   }
 
   playPed(ped, name, fade = 0.22) {

@@ -711,10 +711,10 @@ def build_hair(P, spec, mats, objs, shape):
     apply_solidify(cap, 0.0045)
     objs.append(cap)
 
-    def strand(name, pts, r0, r1, sides=6, material=None):
+    def strand(name, pts, r0, r1, sides=6):
         radii = [lerp(r0, r1, k / max(1, len(pts) - 1)) for k in range(len(pts))]
         objs.append(tube(name, pts, radii, [r * 0.9 for r in radii], sides,
-                         material or hair, {"Head": 1.0}))
+                         hair, {"Head": 1.0}))
 
     def lock(prefix, i, theta0, u0, u1, r0, r1, sweep=0.0, lift=0.014, sides=5):
         pts = []
